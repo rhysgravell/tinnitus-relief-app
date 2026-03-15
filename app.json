@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "tinnitus-temp",
-    "slug": "tinnitus-temp",
+    "name": "Tinnitus Relief",
+    "slug": "tinnitus-relief-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,7 +12,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.rhysgravell.tinnitusreliefapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +22,8 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.rhysgravell.tinnitusreliefapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
