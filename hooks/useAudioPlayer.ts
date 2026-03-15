@@ -11,7 +11,8 @@ export type Soundscape = {
 export function useAudioPlayer() {
   const soundRef = useRef<Audio.Sound | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
 
   useEffect(() => {
     Audio.setAudioModeAsync({
@@ -24,7 +25,8 @@ export function useAudioPlayer() {
   }, []);
 
   async function play(soundscape: Soundscape) {
-    setIsLoading(true);
+    setLoadingId(soundscape.id);
+    setErrorId(null);
     try {
       if (soundRef.current) {
         await soundRef.current.unloadAsync();
@@ -36,8 +38,11 @@ export function useAudioPlayer() {
       });
       soundRef.current = sound;
       setPlayingId(soundscape.id);
+    } catch {
+      setErrorId(soundscape.id);
+      setPlayingId(null);
     } finally {
-      setIsLoading(false);
+      setLoadingId(null);
     }
   }
 
@@ -46,6 +51,7 @@ export function useAudioPlayer() {
     await soundRef.current?.unloadAsync();
     soundRef.current = null;
     setPlayingId(null);
+    setErrorId(null);
   }
 
   async function toggle(soundscape: Soundscape) {
@@ -56,5 +62,5 @@ export function useAudioPlayer() {
     }
   }
 
-  return { playingId, isLoading, toggle, stop };
+  return { playingId, loadingId, errorId, toggle, stop };
 }

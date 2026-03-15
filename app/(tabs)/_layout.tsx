@@ -1,7 +1,9 @@
 import { Tabs } from 'expo-router';
+import { FavouritesProvider } from '../../context/FavouritesContext';
 
 export default function TabLayout() {
   return (
+    <FavouritesProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -13,5 +15,6 @@ export default function TabLayout() {
       <Tabs.Screen name="index" options={{ title: 'Sounds' }} />
       <Tabs.Screen name="favourites" options={{ title: 'Favourites' }} />
     </Tabs>
+    </FavouritesProvider>
   );
 }
