@@ -6,6 +6,7 @@ type Props = {
   isPlaying: boolean;
   isLoading: boolean;
   isFavourite: boolean;
+  hasError: boolean;
   onPress: () => void;
   onFavouritePress: () => void;
 };
@@ -15,22 +16,25 @@ export function SoundscapeCard({
   isPlaying,
   isLoading,
   isFavourite,
+  hasError,
   onPress,
   onFavouritePress,
 }: Props) {
   return (
-    <View style={[styles.card, isPlaying && styles.cardActive]}>
+    <View style={[styles.card, isPlaying && styles.cardActive, hasError && styles.cardError]}>
       <Pressable style={styles.info} onPress={onPress}>
         <Text style={styles.title}>{soundscape.title}</Text>
-        <Text style={styles.description}>{soundscape.description}</Text>
+        <Text style={[styles.description, hasError && styles.descriptionError]}>
+          {hasError ? 'Failed to load audio' : soundscape.description}
+        </Text>
       </Pressable>
       <View style={styles.actions}>
         <Pressable onPress={onFavouritePress} style={styles.iconButton}>
           <Text style={styles.icon}>{isFavourite ? '★' : '☆'}</Text>
         </Pressable>
-        <Pressable onPress={onPress} style={[styles.playButton, isPlaying && styles.playButtonActive]}>
+        <Pressable onPress={onPress} style={[styles.playButton, isPlaying && styles.playButtonActive, hasError && styles.playButtonError]}>
           <Text style={styles.playIcon}>
-            {isLoading ? '…' : isPlaying ? '■' : '▶'}
+            {isLoading ? '…' : hasError ? '!' : isPlaying ? '■' : '▶'}
           </Text>
         </Pressable>
       </View>
@@ -52,6 +56,9 @@ const styles = StyleSheet.create({
   cardActive: {
     borderColor: '#7eb8f7',
   },
+  cardError: {
+    borderColor: '#e05555',
+  },
   info: {
     flex: 1,
   },
@@ -64,6 +71,9 @@ const styles = StyleSheet.create({
   description: {
     color: '#7a8aa0',
     fontSize: 13,
+  },
+  descriptionError: {
+    color: '#e05555',
   },
   actions: {
     flexDirection: 'row',
@@ -87,6 +97,9 @@ const styles = StyleSheet.create({
   },
   playButtonActive: {
     backgroundColor: '#7eb8f7',
+  },
+  playButtonError: {
+    backgroundColor: '#e05555',
   },
   playIcon: {
     color: '#fff',

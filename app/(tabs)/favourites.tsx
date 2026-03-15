@@ -1,26 +1,13 @@
-import { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 import { SoundscapeCard } from '../../components/SoundscapeCard';
+import { useFavourites } from '../../context/FavouritesContext';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import { SOUNDSCAPES } from '../../store/soundscapes';
-import { getFavourites, toggleFavourite } from '../../store/favourites';
 
 export default function FavouritesScreen() {
-  const { playingId, isLoading, toggle } = useAudioPlayer();
-  const [favourites, setFavourites] = useState<string[]>([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      getFavourites().then(setFavourites);
-    }, [])
-  );
-
-  const handleFavourite = useCallback(async (id: string) => {
-    const updated = await toggleFavourite(id);
-    setFavourites(updated);
-  }, []);
+  const { playingId, loadingId, errorId, toggle } = useAudioPlayer();
+  const { favourites, toggleFavourite } = useFavourites();
 
   const favouriteSoundscapes = SOUNDSCAPES.filter((s) => favourites.includes(s.id));
 
@@ -33,9 +20,7 @@ export default function FavouritesScreen() {
       {favouriteSoundscapes.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>No favourites yet.</Text>
-          <Text style={styles.emptyHint}>
-            Tap the ☆ on any soundscape to save it here.
-          </Text>
+          <Text style={styles.emptyHint}>Tap the ☆ on any soundscape to save it here.</Text>
         </View>
       ) : (
         <FlatList
@@ -46,10 +31,11 @@ export default function FavouritesScreen() {
             <SoundscapeCard
               soundscape={item}
               isPlaying={playingId === item.id}
-              isLoading={isLoading && playingId === item.id}
+              isLoading={loadingId === item.id}
               isFavourite={true}
+              hasError={errorId === item.id}
               onPress={() => toggle(item)}
-              onFavouritePress={() => handleFavourite(item.id)}
+              onFavouritePress={() => toggleFavourite(item.id)}
             />
           )}
         />
