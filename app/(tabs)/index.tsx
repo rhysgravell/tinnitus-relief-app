@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { FlatList, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { SoundscapeCard } from '../../components/SoundscapeCard';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import { SOUNDSCAPES } from '../../store/soundscapes';
