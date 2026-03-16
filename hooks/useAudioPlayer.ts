@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import type { AudioPlayer } from 'expo-audio';
 
 export type Soundscape = {
   id: string;
@@ -9,18 +10,18 @@ export type Soundscape = {
 };
 
 export function useAudioPlayer() {
-  const soundRef = useRef<Audio.Sound | null>(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
 
   useEffect(() => {
-    Audio.setAudioModeAsync({
-      staysActiveInBackground: true,
-      playsInSilentModeIOS: true,
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      shouldPlayInBackground: true,
     });
     return () => {
-      soundRef.current?.unloadAsync();
+      playerRef.current?.remove();
     };
   }, []);
 
@@ -28,15 +29,13 @@ export function useAudioPlayer() {
     setLoadingId(soundscape.id);
     setErrorId(null);
     try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-      }
-      const { sound } = await Audio.Sound.createAsync(soundscape.file, {
-        isLooping: true,
-        shouldPlay: true,
-      });
-      soundRef.current = sound;
+      playerRef.current?.remove();
+      playerRef.current = null;
+
+      const player = createAudioPlayer(soundscape.file);
+      player.loop = true;
+      player.play();
+      playerRef.current = player;
       setPlayingId(soundscape.id);
     } catch {
       setErrorId(soundscape.id);
@@ -46,17 +45,16 @@ export function useAudioPlayer() {
     }
   }
 
-  async function stop() {
-    await soundRef.current?.stopAsync();
-    await soundRef.current?.unloadAsync();
-    soundRef.current = null;
+  function stop() {
+    playerRef.current?.remove();
+    playerRef.current = null;
     setPlayingId(null);
     setErrorId(null);
   }
 
   async function toggle(soundscape: Soundscape) {
     if (playingId === soundscape.id) {
-      await stop();
+      stop();
     } else {
       await play(soundscape);
     }
