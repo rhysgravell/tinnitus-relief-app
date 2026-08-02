@@ -16,7 +16,6 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Sounds',
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name={focused ? 'musical-notes' : 'musical-notes-outline'} size={22} color={color} />
             ),
@@ -25,7 +24,6 @@ export default function TabLayout() {
         <Tabs.Screen
           name="favourites"
           options={{
-            title: 'Favourites',
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name={focused ? 'star' : 'star-outline'} size={22} color={color} />
             ),
