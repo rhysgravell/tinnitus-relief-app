@@ -4,17 +4,17 @@ import { FavouritesProvider } from '../../context/FavouritesContext';
 export default function TabLayout() {
   return (
     <FavouritesProvider>
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarStyle: { backgroundColor: '#0a1628' },
-        tabBarActiveTintColor: '#7eb8f7',
-        tabBarInactiveTintColor: '#4a5568',
-      }}
-    >
-      <Tabs.Screen name="index" options={{ title: 'Sounds' }} />
-      <Tabs.Screen name="favourites" options={{ title: 'Favourites' }} />
-    </Tabs>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { backgroundColor: '#0a1628' },
+          tabBarActiveTintColor: '#7eb8f7',
+          tabBarInactiveTintColor: '#4a5568',
+        }}
+      >
+        <Tabs.Screen name="index" options={{ title: 'Sounds' }} />
+        <Tabs.Screen name="favourites" options={{ title: 'Favourites' }} />
+      </Tabs>
     </FavouritesProvider>
   );
 }
