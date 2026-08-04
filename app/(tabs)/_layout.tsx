@@ -8,6 +8,7 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          tabBarShowLabel: false,
           tabBarStyle: { backgroundColor: '#0a1628' },
           tabBarActiveTintColor: '#7eb8f7',
           tabBarInactiveTintColor: '#4a5568',
@@ -26,6 +27,22 @@ export default function TabLayout() {
           options={{
             tabBarIcon: ({ color, focused }) => (
               <Ionicons name={focused ? 'star' : 'star-outline'} size={22} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="sleep"
+          options={{
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'moon' : 'moon-outline'} size={22} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="mood"
+          options={{
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons name={focused ? 'happy' : 'happy-outline'} size={22} color={color} />
             ),
           }}
         />
