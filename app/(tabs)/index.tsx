@@ -1,16 +1,20 @@
 import { useCallback } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SoundscapeCard } from '../../components/SoundscapeCard';
+import { SoundscapeBubble } from '../../components/SoundscapeBubble';
 import { useFavourites } from '../../context/FavouritesContext';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import { TIMER_PRESETS, TimerPreset, useSleepTimer } from '../../hooks/useSleepTimer';
 import { SOUNDSCAPES } from '../../store/soundscapes';
 
+const GRID_PADDING = 20;
+const COLUMN_GAP = 16;
+
 export default function HomeScreen() {
   const { playingId, loadingId, errorId, toggle, stop } = useAudioPlayer();
   const { favourites, toggleFavourite } = useFavourites();
   const { minutesRemaining, start: startTimer, cancel: cancelTimer } = useSleepTimer(stop);
+  const { width } = useWindowDimensions();
 
   const handleTimerPress = useCallback(
     (minutes: TimerPreset) => {
@@ -21,6 +25,26 @@ export default function HomeScreen() {
       }
     },
     [minutesRemaining, startTimer, cancelTimer]
+  );
+
+  const circleSize = (width - GRID_PADDING * 2 - COLUMN_GAP) / 2;
+  const leftColumn = SOUNDSCAPES.filter((_, i) => i % 2 === 0);
+  const rightColumn = SOUNDSCAPES.filter((_, i) => i % 2 === 1);
+
+  const renderBubble = (item: (typeof SOUNDSCAPES)[number], tone: 'a' | 'b') => (
+    <View key={item.id} style={{ marginBottom: COLUMN_GAP }}>
+      <SoundscapeBubble
+        soundscape={item}
+        size={circleSize}
+        tone={tone}
+        isPlaying={playingId === item.id}
+        isLoading={loadingId === item.id}
+        isFavourite={favourites.includes(item.id)}
+        hasError={errorId === item.id}
+        onPress={() => toggle(item)}
+        onFavouritePress={() => toggleFavourite(item.id)}
+      />
+    </View>
   );
 
   return (
@@ -56,22 +80,12 @@ export default function HomeScreen() {
           </Text>
         </View>
       ) : (
-        <FlatList
-          data={SOUNDSCAPES}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          renderItem={({ item }) => (
-            <SoundscapeCard
-              soundscape={item}
-              isPlaying={playingId === item.id}
-              isLoading={loadingId === item.id}
-              isFavourite={favourites.includes(item.id)}
-              hasError={errorId === item.id}
-              onPress={() => toggle(item)}
-              onFavouritePress={() => toggleFavourite(item.id)}
-            />
-          )}
-        />
+        <ScrollView contentContainerStyle={styles.grid}>
+          <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
+          <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
+            {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
+          </View>
+        </ScrollView>
       )}
     </SafeAreaView>
   );
@@ -135,8 +149,11 @@ const styles = StyleSheet.create({
     color: '#e8f0fe',
     fontSize: 13,
   },
-  list: {
-    paddingHorizontal: 16,
+  grid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: GRID_PADDING,
+    paddingBottom: 24,
   },
   empty: {
     flex: 1,
