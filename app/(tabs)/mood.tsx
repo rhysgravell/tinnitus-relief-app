@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MoodBubble } from '../../components/MoodBubble';
 import { COLUMN_GAP, GRID_PADDING, useBubbleGrid } from '../../hooks/useBubbleGrid';
@@ -7,7 +7,12 @@ import { MOODS } from '../../store/moods';
 
 export default function MoodScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const { circleSize, leftColumn, rightColumn } = useBubbleGrid(MOODS);
+  const [gridHeight, setGridHeight] = useState(0);
+  const { circleSize, leftColumn, rightColumn } = useBubbleGrid(MOODS, gridHeight);
+
+  const handleGridLayout = (event: LayoutChangeEvent) => {
+    setGridHeight(event.nativeEvent.layout.height);
+  };
 
   const renderBubble = (mood: (typeof MOODS)[number], tone: 'a' | 'b') => (
     <View key={mood.id} style={{ marginBottom: COLUMN_GAP }}>
@@ -27,12 +32,16 @@ export default function MoodScreen() {
         <Text style={styles.heading}>Mood</Text>
         <Text style={styles.subheading}>Track how you&rsquo;re feeling</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.grid}>
-        <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
-        <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
-          {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
-        </View>
-      </ScrollView>
+      <View style={styles.grid} onLayout={handleGridLayout}>
+        {gridHeight > 0 && (
+          <>
+            <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
+            <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
+              {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
+            </View>
+          </>
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -58,6 +67,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   grid: {
+    flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: GRID_PADDING,
