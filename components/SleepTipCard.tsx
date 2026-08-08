@@ -1,20 +1,32 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SleepTip } from '../store/sleepTips';
 
 type Props = {
   tip: SleepTip;
+  onPress?: () => void;
 };
 
-export function SleepTipCard({ tip }: Props) {
-  return (
-    <View style={styles.card}>
+export function SleepTipCard({ tip, onPress }: Props) {
+  const content = (
+    <>
       <Text style={styles.icon}>{tip.icon}</Text>
       <View style={styles.info}>
         <Text style={styles.title}>{tip.title}</Text>
         <Text style={styles.description}>{tip.description}</Text>
       </View>
-    </View>
+      {onPress && <Text style={styles.chevron}>›</Text>}
+    </>
   );
+
+  if (onPress) {
+    return (
+      <Pressable style={styles.card} onPress={onPress}>
+        {content}
+      </Pressable>
+    );
+  }
+
+  return <View style={styles.card}>{content}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -44,5 +56,10 @@ const styles = StyleSheet.create({
   description: {
     color: '#7a8aa0',
     fontSize: 13,
+  },
+  chevron: {
+    color: '#7eb8f7',
+    fontSize: 22,
+    marginLeft: 8,
   },
 });

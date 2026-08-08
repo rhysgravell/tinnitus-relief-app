@@ -1,9 +1,15 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { BreathingExercise } from '../../components/BreathingExercise';
 import { SleepTipCard } from '../../components/SleepTipCard';
 import { SLEEP_TIPS } from '../../store/sleepTips';
 
+const BREATHING_TIP_ID = 'slow-breathing';
+
 export default function SleepScreen() {
+  const [breathingVisible, setBreathingVisible] = useState(false);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -12,9 +18,14 @@ export default function SleepScreen() {
       </View>
       <ScrollView contentContainerStyle={styles.list}>
         {SLEEP_TIPS.map((tip) => (
-          <SleepTipCard key={tip.id} tip={tip} />
+          <SleepTipCard
+            key={tip.id}
+            tip={tip}
+            onPress={tip.id === BREATHING_TIP_ID ? () => setBreathingVisible(true) : undefined}
+          />
         ))}
       </ScrollView>
+      <BreathingExercise visible={breathingVisible} onClose={() => setBreathingVisible(false)} />
     </SafeAreaView>
   );
 }
