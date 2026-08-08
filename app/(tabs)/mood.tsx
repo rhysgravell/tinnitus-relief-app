@@ -11,6 +11,7 @@ export default function MoodScreen() {
   const { circleSize, leftColumn, rightColumn } = useBubbleGrid(MOODS, gridHeight);
 
   const handleGridLayout = (event: LayoutChangeEvent) => {
+    if (gridHeight > 0) return;
     setGridHeight(event.nativeEvent.layout.height);
   };
 
@@ -32,15 +33,11 @@ export default function MoodScreen() {
         <Text style={styles.heading}>Mood</Text>
         <Text style={styles.subheading}>Track how you&rsquo;re feeling</Text>
       </View>
-      <View style={styles.grid} onLayout={handleGridLayout}>
-        {gridHeight > 0 && (
-          <>
-            <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
-            <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
-              {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
-            </View>
-          </>
-        )}
+      <View style={[styles.grid, { opacity: gridHeight > 0 ? 1 : 0 }]} onLayout={handleGridLayout}>
+        <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
+        <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
+          {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
+        </View>
       </View>
     </SafeAreaView>
   );
