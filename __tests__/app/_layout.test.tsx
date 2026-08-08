@@ -1,7 +1,13 @@
 import { render, screen } from '@testing-library/react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
-import RootLayout from './_layout';
+import RootLayout from '../../app/_layout';
+
+// This test lives outside `app/` on purpose. Expo Router turns every file under the
+// app directory into a route — its context filter only excludes `+api`, `+html`,
+// `+middleware` and `+native-intent` — so a colocated `.test.tsx` gets bundled into
+// the app, pulling the test library and its Node `console` dependency into the
+// runtime bundle. See the guard in ./routes.test.ts.
 
 jest.mock('expo-font', () => ({ useFonts: jest.fn() }));
 
