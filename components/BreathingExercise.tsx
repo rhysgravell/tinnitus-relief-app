@@ -46,7 +46,7 @@ function BreathingContent({ onClose }: { onClose: () => void }) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(10, 22, 40, 0.92)',
+    backgroundColor: '#0a1f1a',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -58,9 +58,9 @@ const styles = StyleSheet.create({
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: '#1e3a5f',
+    backgroundColor: '#1e4a3a',
     borderWidth: 2,
-    borderColor: '#7eb8f7',
+    borderColor: '#8fd9b0',
     marginBottom: 32,
   },
   phaseLabel: {
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   countdown: {
-    color: '#7a8aa0',
+    color: '#9fc9b8',
     fontSize: 16,
     marginTop: 8,
   },
@@ -78,13 +78,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#111e35',
-    borderWidth: 1,
-    borderColor: '#1e2d4a',
+    backgroundColor: '#8fd9b0',
   },
   closeButtonText: {
-    color: '#7eb8f7',
+    color: '#0a1f1a',
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
