@@ -1,5 +1,33 @@
+import { useEffect } from 'react';
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { ThemeProvider } from '../theme/ThemeProvider';
+import { FONT_ASSETS } from '../theme/fonts';
+
+// Both splash calls reject if the splash has already been hidden, which happens on a
+// fast refresh. Swallow it rather than surface an unhandled rejection in development.
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  const [loaded, error] = useFonts(FONT_ASSETS);
+  const ready = loaded || error !== null;
+
+  useEffect(() => {
+    if (ready) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [ready]);
+
+  // Hold the splash until the fonts are ready, so text never reflows from a system
+  // fallback. If loading fails we render anyway rather than sit on the splash forever.
+  if (!ready) {
+    return null;
+  }
+
+  return (
+    <ThemeProvider scheme="light">
+      <Stack screenOptions={{ headerShown: false }} />
+    </ThemeProvider>
+  );
 }
