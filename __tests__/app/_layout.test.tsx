@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import RootLayout from '../../app/_layout';
@@ -10,6 +11,14 @@ import RootLayout from '../../app/_layout';
 // runtime bundle. See the guard in ./routes.test.ts.
 
 jest.mock('expo-font', () => ({ useFonts: jest.fn() }));
+
+// The layout wraps the navigator in the sound-state provider, which reads storage as it
+// mounts. That read is not what these tests are about, so the provider is a passthrough.
+jest.mock('../../context/SoundStateContext', () => ({
+  SoundStateProvider: function SoundStateProvider({ children }: { children?: ReactNode }) {
+    return children;
+  },
+}));
 
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(() => Promise.resolve()),

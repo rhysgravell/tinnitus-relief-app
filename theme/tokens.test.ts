@@ -1,5 +1,5 @@
 import { FONT_ASSETS } from './fonts';
-import { CHART_RAMP, COLORS, FONT, RADIUS, SPACE, TYPE } from './tokens';
+import { CHART_RAMP, COLORS, FONT, OVERLAY, RADIUS, SPACE, TYPE } from './tokens';
 
 describe('colour palettes', () => {
   it('defines the same keys for light and dark', () => {
@@ -91,5 +91,22 @@ describe('scales', () => {
   it('ramps the chart tints across four steps ending on the primary green', () => {
     expect(CHART_RAMP).toHaveLength(4);
     expect(CHART_RAMP[CHART_RAMP.length - 1]).toBe(COLORS.light.primary);
+  });
+});
+
+describe('artwork overlay', () => {
+  it('keeps the chip translucent so the artwork reads through it', () => {
+    expect(OVERLAY.chip).toMatch(/^rgba\(/);
+  });
+
+  it('marks a saved star in the accent green', () => {
+    expect(OVERLAY.starSaved).toBe(COLORS.light.primary);
+  });
+
+  it('sits the idle star lighter than the saved one', () => {
+    // Both have to hold their own on a photograph, so the difference is lightness rather
+    // than the fill-versus-outline contrast a flat surface could rely on.
+    expect(OVERLAY.starIdle).not.toBe(OVERLAY.starSaved);
+    expect(OVERLAY.starIdle).toMatch(/^#[0-9A-F]{6}$/);
   });
 });

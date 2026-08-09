@@ -118,6 +118,18 @@ export type Scheme = keyof typeof COLORS;
 export const CHART_RAMP = ['#C6D6CF', '#A6C2B6', '#7FA795', '#3F6B5C'] as const;
 
 /**
+ * Colours for controls that sit on artwork rather than on a surface. They are outside the
+ * palette on purpose: the photograph underneath does not change with the scheme, so a
+ * saved star has to stay legible whichever palette the screen is using.
+ */
+export const OVERLAY = {
+  /** The chip behind the star, translucent so the artwork still reads through it. */
+  chip: 'rgba(255, 255, 255, 0.85)',
+  starSaved: '#3F6B5C',
+  starIdle: '#9BA9A6',
+} as const;
+
+/**
  * The spacing scale. Keys are the values, so an off-scale number stands out in review.
  */
 export const SPACE = {

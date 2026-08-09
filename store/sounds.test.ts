@@ -1,4 +1,4 @@
-import { findSound, isPlayable, SOUNDS, soundsInCategory } from './sounds';
+import { findSound, isPlayable, SOUND_FILTERS, SOUNDS, soundsInCategory } from './sounds';
 
 describe('sound catalogue', () => {
   it('gives every sound a unique id', () => {
@@ -43,6 +43,26 @@ describe('sound catalogue', () => {
   it('treats a sound as playable exactly when it has audio', () => {
     for (const sound of SOUNDS) {
       expect(isPlayable(sound)).toBe(sound.file !== null);
+    }
+  });
+});
+
+describe('filter row', () => {
+  it('leads with All', () => {
+    expect(SOUND_FILTERS[0]).toEqual({ value: 'all', label: 'All' });
+  });
+
+  it('offers a chip for every category a sound uses', () => {
+    // A category with no chip is a sound the user cannot filter down to.
+    const chips = SOUND_FILTERS.map((filter) => filter.value);
+    for (const sound of SOUNDS) {
+      expect(chips).toContain(sound.category);
+    }
+  });
+
+  it('offers no chip that filters to nothing', () => {
+    for (const { value } of SOUND_FILTERS) {
+      expect(soundsInCategory(value).length).toBeGreaterThan(0);
     }
   });
 });
