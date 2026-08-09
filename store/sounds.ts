@@ -1,6 +1,20 @@
 /** The filter row on the Sounds screen offers All plus one chip per category. */
 export type SoundCategory = 'rain' | 'nature' | 'noise';
 
+/** A filter row entry. `all` is the default and is not a category. */
+export type SoundFilter = { value: SoundCategory | 'all'; label: string };
+
+/**
+ * The filter row, in the order the design lays it out. It lives with the catalogue rather
+ * than with the screen so a new category cannot be added without a chip to reach it.
+ */
+export const SOUND_FILTERS: readonly SoundFilter[] = [
+  { value: 'all', label: 'All' },
+  { value: 'rain', label: 'Rain' },
+  { value: 'nature', label: 'Nature' },
+  { value: 'noise', label: 'Noise' },
+] as const;
+
 export type Sound = {
   id: string;
   name: string;

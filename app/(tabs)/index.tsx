@@ -1,170 +1,161 @@
-import { useCallback } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { FlatList, Pressable, StyleSheet, Text as RNText, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SoundscapeBubble } from '../../components/SoundscapeBubble';
-import { useFavourites } from '../../context/FavouritesContext';
-import { useAudioPlayer } from '../../hooks/useAudioPlayer';
-import { GRID_PADDING, COLUMN_GAP, useBubbleGrid } from '../../hooks/useBubbleGrid';
-import { TIMER_PRESETS, TimerPreset, useSleepTimer } from '../../hooks/useSleepTimer';
-import { SOUNDSCAPES } from '../../store/soundscapes';
+import { useRouter } from 'expo-router';
+import { Pill } from '../../components/Pill';
+import { ResumeCard } from '../../components/ResumeCard';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { SoundCard } from '../../components/SoundCard';
+import { useSoundStates } from '../../context/SoundStateContext';
+import { useLastSession } from '../../hooks/useLastSession';
+import { useTheme } from '../../theme/ThemeProvider';
+import { LAYOUT, SPACE } from '../../theme/tokens';
+import { SOUND_FILTERS, findSound, isPlayable, soundsInCategory } from '../../store/sounds';
+import type { SoundCategory } from '../../store/sounds';
+import { greetingFor } from '../../utils/time';
 
-export default function HomeScreen() {
-  const { playingId, loadingId, errorId, toggle, stop } = useAudioPlayer();
-  const { favourites, toggleFavourite } = useFavourites();
-  const { minutesRemaining, start: startTimer, cancel: cancelTimer } = useSleepTimer(stop);
-  const { circleSize, leftColumn, rightColumn } = useBubbleGrid(SOUNDSCAPES);
+const GRID_GAP = SPACE.s14;
 
-  const handleTimerPress = useCallback(
-    (minutes: TimerPreset) => {
-      if (minutesRemaining !== null) {
-        cancelTimer();
-      } else {
-        startTimer(minutes);
-      }
-    },
-    [minutesRemaining, startTimer, cancelTimer]
-  );
+/**
+ * Sounds — the home screen. Resume first, then browse: the fastest path to relief is
+ * repeating last night, so that is the one thing above the fold.
+ */
+export default function SoundsScreen() {
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const { stateFor, toggleSaved } = useSoundStates();
+  const { session } = useLastSession();
+  const [filter, setFilter] = useState<SoundCategory | 'all'>('all');
 
-  const renderBubble = (item: (typeof SOUNDSCAPES)[number], tone: 'a' | 'b') => (
-    <View key={item.id} style={{ marginBottom: COLUMN_GAP }}>
-      <SoundscapeBubble
-        soundscape={item}
-        size={circleSize}
-        tone={tone}
-        isPlaying={playingId === item.id}
-        isLoading={loadingId === item.id}
-        isFavourite={favourites.includes(item.id)}
-        hasError={errorId === item.id}
-        onPress={() => toggle(item)}
-        onFavouritePress={() => toggleFavourite(item.id)}
-      />
-    </View>
-  );
+  // Two columns with a fixed width rather than `flex: 1`, so a row holding one card leaves
+  // the gap beside it instead of stretching the card across the screen.
+  const cardWidth = Math.floor((width - LAYOUT.screenGutter * 2 - GRID_GAP) / 2);
+
+  const resumeSound = session ? findSound(session.soundId) : undefined;
+  // A sound can drop out of the catalogue, and the recording for one of them has not
+  // shipped. Either way there is nothing to resume, so the card stays away.
+  const resumable = resumeSound && isPlayable(resumeSound) ? resumeSound : undefined;
+
+  const openSession = (soundId: string) => {
+    router.push({ pathname: '/session', params: { soundId } });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>Tinnitus Relief</Text>
-        <Text style={styles.subheading}>Choose a soundscape</Text>
-      </View>
-      <View style={styles.timerRow}>
-        {minutesRemaining !== null ? (
-          <>
-            <Text style={styles.timerCountdown}>⏱ {minutesRemaining}m remaining</Text>
-            <Pressable onPress={cancelTimer} style={styles.timerCancel}>
-              <Text style={styles.timerCancelText}>Cancel</Text>
-            </Pressable>
-          </>
-        ) : (
-          <>
-            <Text style={styles.timerLabel}>Sleep timer:</Text>
-            {TIMER_PRESETS.map((m) => (
-              <Pressable key={m} onPress={() => handleTimerPress(m)} style={styles.timerChip}>
-                <Text style={styles.timerChipText}>{m}m</Text>
-              </Pressable>
-            ))}
-          </>
-        )}
-      </View>
-      {SOUNDSCAPES.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No soundscapes yet.</Text>
-          <Text style={styles.emptyHint}>
-            Add your audio exports to assets/sounds/ and register them in store/soundscapes.ts
-          </Text>
+    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.background }]}>
+      <ScreenHeader
+        greeting={greetingFor(new Date())}
+        title="Let's settle things"
+        paddingBottom={0}
+        action={<SettingsButton onPress={() => router.push('/settings')} />}
+      />
+
+      {resumable && session ? (
+        <View style={styles.resume}>
+          <ResumeCard
+            sound={resumable}
+            session={session}
+            onPress={() => openSession(resumable.id)}
+          />
         </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.grid}>
-          <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
-          <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
-            {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
+      ) : null}
+
+      <View style={styles.filters}>
+        {SOUND_FILTERS.map(({ value, label }) => (
+          <Pill
+            key={value}
+            label={label}
+            size="compact"
+            selected={filter === value}
+            onPress={() => setFilter(value)}
+          />
+        ))}
+      </View>
+
+      <FlatList
+        data={soundsInCategory(filter)}
+        keyExtractor={(sound) => sound.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
+        renderItem={({ item }) => (
+          <View style={{ width: cardWidth }}>
+            <SoundCard
+              sound={item}
+              saved={stateFor(item.id).saved}
+              onPress={() => openSession(item.id)}
+              onToggleSaved={() => toggleSaved(item.id)}
+            />
           </View>
-        </ScrollView>
-      )}
+        )}
+      />
     </SafeAreaView>
   );
 }
 
+/** The 38pt circle in the header. It is the only way into Settings — there is no fifth tab. */
+function SettingsButton({ onPress }: { onPress: () => void }) {
+  const { colors } = useTheme();
+
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="Settings"
+      hitSlop={(LAYOUT.minTouchTarget - SETTINGS_BUTTON_SIZE) / 2}
+      style={({ pressed }) => [
+        styles.settingsButton,
+        { backgroundColor: colors.surface, borderColor: colors.borderStrong },
+        pressed && styles.pressed,
+      ]}
+    >
+      {/* The design's glyph is a chevron, and this design ships no icon library. */}
+      <RNText style={[styles.settingsGlyph, { color: colors.textMuted }]}>⌄</RNText>
+    </Pressable>
+  );
+}
+
+const SETTINGS_BUTTON_SIZE = 38;
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#0a1628',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 12,
+  resume: {
+    paddingTop: SPACE.s20,
+    paddingHorizontal: LAYOUT.screenGutter,
   },
-  heading: {
-    color: '#e8f0fe',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  subheading: {
-    color: '#7a8aa0',
-    fontSize: 15,
-    marginTop: 4,
-  },
-  timerRow: {
+  filters: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    gap: 8,
+    gap: SPACE.s8,
+    paddingTop: SPACE.s24,
+    paddingBottom: SPACE.s10,
+    paddingHorizontal: LAYOUT.screenGutter,
   },
-  timerLabel: {
-    color: '#7a8aa0',
-    fontSize: 13,
-  },
-  timerChip: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: '#111e35',
-    borderWidth: 1,
-    borderColor: '#1e2d4a',
-  },
-  timerChipText: {
-    color: '#7eb8f7',
-    fontSize: 13,
-  },
-  timerCountdown: {
-    color: '#7eb8f7',
-    fontSize: 13,
-    flex: 1,
-  },
-  timerCancel: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: '#1e2d4a',
-  },
-  timerCancelText: {
-    color: '#e8f0fe',
-    fontSize: 13,
+  row: {
+    gap: GRID_GAP,
   },
   grid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: GRID_PADDING,
-    paddingBottom: 24,
+    paddingTop: SPACE.s6,
+    paddingHorizontal: LAYOUT.screenGutter,
+    paddingBottom: SPACE.s20,
+    gap: GRID_GAP,
   },
-  empty: {
-    flex: 1,
+  settingsButton: {
+    width: SETTINGS_BUTTON_SIZE,
+    height: SETTINGS_BUTTON_SIZE,
+    borderRadius: SETTINGS_BUTTON_SIZE / 2,
+    borderWidth: LAYOUT.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 32,
+    // The chevron reads as lower than the title without this; the design nudges it down.
+    marginTop: SPACE.s6,
   },
-  emptyText: {
-    color: '#e8f0fe',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
+  settingsGlyph: {
+    fontSize: 16,
+    lineHeight: 16,
   },
-  emptyHint: {
-    color: '#7a8aa0',
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
+  pressed: {
+    opacity: 0.7,
   },
 });
