@@ -27,7 +27,13 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider scheme="light">
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        {/* A sheet rather than a full-screen cover: the design dismisses the session with
+            a swipe down as well as the chevron, and iOS only offers that on a sheet. */}
+        <Stack.Screen name="session" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="settings" />
+      </Stack>
     </ThemeProvider>
   );
 }

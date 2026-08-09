@@ -19,10 +19,18 @@ jest.mock('expo-splash-screen', () => ({
 /* eslint-disable @typescript-eslint/no-require-imports -- a jest.mock factory is hoisted above the imports, so it cannot close over them */
 jest.mock('expo-router', () => {
   const React = require('react');
-  const { Text } = require('react-native');
-  return {
-    Stack: () => React.createElement(Text, { testID: 'stack' }, 'stack'),
-  };
+  const { Text, View } = require('react-native');
+
+  // Each registered screen renders its options, so the tests can assert how a route is
+  // presented without standing up a real navigator.
+  const Stack = ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(View, { testID: 'stack' }, children);
+  const Screen = ({ name, options }: { name: string; options?: object }) =>
+    React.createElement(Text, { testID: `screen-${name}` }, JSON.stringify(options ?? {}));
+  Screen.displayName = 'Stack.Screen';
+  Stack.Screen = Screen;
+
+  return { Stack };
 });
 /* eslint-enable @typescript-eslint/no-require-imports */
 
@@ -60,6 +68,27 @@ describe('RootLayout', () => {
     fontState(true);
     render(<RootLayout />);
     expect(SplashScreen.hideAsync).toHaveBeenCalled();
+  });
+
+  it('registers the tabs alongside the two screens that sit outside them', () => {
+    // Session is a modal over the tab bar and Settings is a push; neither is a fifth tab.
+    fontState(true);
+    render(<RootLayout />);
+    expect(screen.getByTestId('screen-(tabs)')).toBeTruthy();
+    expect(screen.getByTestId('screen-session')).toBeTruthy();
+    expect(screen.getByTestId('screen-settings')).toBeTruthy();
+  });
+
+  it('presents the session as a modal so it can be swiped away', () => {
+    fontState(true);
+    render(<RootLayout />);
+    expect(screen.getByTestId('screen-session').props.children).toContain('"presentation":"modal"');
+  });
+
+  it('pushes settings rather than presenting it', () => {
+    fontState(true);
+    render(<RootLayout />);
+    expect(screen.getByTestId('screen-settings').props.children).not.toContain('presentation');
   });
 
   it('renders anyway when font loading fails', () => {
