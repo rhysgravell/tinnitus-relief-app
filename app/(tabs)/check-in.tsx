@@ -5,7 +5,7 @@ import { MoodBubble } from '../../components/MoodBubble';
 import { COLUMN_GAP, GRID_PADDING, useBubbleGrid } from '../../hooks/useBubbleGrid';
 import { MOODS } from '../../store/moods';
 
-export default function MoodScreen() {
+export default function CheckInScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [gridHeight, setGridHeight] = useState(0);
   const { circleSize, leftColumn, rightColumn } = useBubbleGrid(MOODS, gridHeight);

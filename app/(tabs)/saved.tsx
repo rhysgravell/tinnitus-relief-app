@@ -5,7 +5,7 @@ import { useFavourites } from '../../context/FavouritesContext';
 import { useAudioPlayer } from '../../hooks/useAudioPlayer';
 import { SOUNDSCAPES } from '../../store/soundscapes';
 
-export default function FavouritesScreen() {
+export default function SavedScreen() {
   const { playingId, loadingId, errorId, toggle } = useAudioPlayer();
   const { favourites, toggleFavourite } = useFavourites();
 
