@@ -43,6 +43,8 @@ export type Palette = {
   textFaint: string;
   /** Labels and tertiary text. */
   textSubtle: string;
+  /** The label on an unselected pill — a step lighter than `text`. */
+  pillLabel: string;
   /** Row separators inside cards, tab bar top edge. */
   hairline: string;
   /** The lighter separator used between rows of a settings card. */
@@ -70,6 +72,7 @@ const light: Palette = {
   textMuted: '#5F726D',
   textFaint: '#7C8C88',
   textSubtle: '#8A9995',
+  pillLabel: '#3D4E4A',
   hairline: '#DCE4E1',
   hairlineInner: '#E7EDEA',
   border: '#DCE4E1',
@@ -94,6 +97,7 @@ const dark: Palette = {
   textMuted: '#8FA3A0',
   textFaint: '#6F8582',
   textSubtle: '#6F8582',
+  pillLabel: '#A9BCB8',
   hairline: '#1E3133',
   hairlineInner: '#1E3133',
   border: '#253C3E',
@@ -183,6 +187,10 @@ export const TYPE = {
   rowTitle: { fontFamily: FONT.sansSemiBold, fontSize: 16, lineHeight: 21 },
   buttonLabel: { fontFamily: FONT.sansSemiBold, fontSize: 16, lineHeight: 21 },
   gridCardTitle: { fontFamily: FONT.sansSemiBold, fontSize: 15, lineHeight: 20 },
+  // Pills carry the label's weight rather than its size: 14px throughout, 400 when
+  // unselected (`bodySecondary`), 500 once filled, and 600 for the session timer.
+  pillLabelSelected: { fontFamily: FONT.sansMedium, fontSize: 14, lineHeight: 21 },
+  pillLabelStrong: { fontFamily: FONT.sansSemiBold, fontSize: 14, lineHeight: 21 },
   body: { fontFamily: FONT.sans, fontSize: 15, lineHeight: 23 },
   bodySecondary: { fontFamily: FONT.sans, fontSize: 14, lineHeight: 21 },
   meta: { fontFamily: FONT.sans, fontSize: 13, lineHeight: 18 },

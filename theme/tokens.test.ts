@@ -27,6 +27,24 @@ describe('colour palettes', () => {
   });
 });
 
+describe('pills', () => {
+  it('keeps the pill label a step off the body colour in both palettes', () => {
+    // An unselected pill's label is lighter than body text in light and lighter than the
+    // muted text in night — it is a control, not copy.
+    expect(COLORS.light.pillLabel).not.toBe(COLORS.light.text);
+    expect(COLORS.dark.pillLabel).not.toBe(COLORS.dark.textMuted);
+  });
+
+  it('changes only the weight of the label across the pill states', () => {
+    const states = [TYPE.bodySecondary, TYPE.pillLabelSelected, TYPE.pillLabelStrong];
+    for (const state of states) {
+      expect(state.fontSize).toBe(14);
+      expect(state.lineHeight).toBe(21);
+    }
+    expect(new Set(states.map((s) => s.fontFamily)).size).toBe(3);
+  });
+});
+
 describe('typography', () => {
   it('only uses font families that are actually loaded', () => {
     // A family name that is not a key of FONT_ASSETS silently falls back to the system
