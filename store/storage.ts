@@ -17,3 +17,8 @@ export async function readJson<T>(key: string, fallback: T): Promise<T> {
 export async function writeJson<T>(key: string, value: T): Promise<void> {
   await AsyncStorage.setItem(key, JSON.stringify(value));
 }
+
+/** Drops a key entirely. For a migration, once what it held has been carried over. */
+export async function removeKey(key: string): Promise<void> {
+  await AsyncStorage.removeItem(key);
+}

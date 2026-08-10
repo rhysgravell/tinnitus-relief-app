@@ -39,7 +39,7 @@ describe('PrimaryButton', () => {
 
   it('shrinks to its label when inline', () => {
     // The Saved empty state centres the button under the copy rather than stretching it.
-    render(<PrimaryButton label="Browse soundscapes" onPress={() => {}} inline />);
+    render(<PrimaryButton label="Browse sounds" onPress={() => {}} inline />);
     expect(buttonStyle()).toMatchObject({ alignSelf: 'center' });
   });
 

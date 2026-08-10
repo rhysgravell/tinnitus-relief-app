@@ -1,6 +1,10 @@
-import { readJson, writeJson } from './storage';
+import { readJson, removeKey, writeJson } from './storage';
+import { findSound } from './sounds';
 
 const KEY = 'soundState';
+
+/** Where the app kept favourites before the redesign folded them into sound state. */
+const LEGACY_FAVOURITES_KEY = 'favourites';
 
 /**
  * Per-sound state the user builds up by using the app, kept apart from the catalogue in
@@ -53,6 +57,32 @@ export async function toggleSaved(id: string): Promise<boolean> {
 export async function getSavedIds(): Promise<string[]> {
   const states = await getSoundStates();
   return Object.keys(states).filter((id) => states[id].saved);
+}
+
+/**
+ * Carries pre-redesign favourites into sound state, then drops the old key.
+ *
+ * The redesign replaced a flat list of ids with per-sound state, and without this a
+ * returning user's saved list would look wiped by the update. Runs on every launch but
+ * does nothing once the old key is gone, which is the point — it needs no flag of its own.
+ */
+export async function migrateFavourites(): Promise<void> {
+  // Read as unknown: this is data written by a version of the app that is no longer here
+  // to be reasoned about, so nothing about its shape can be assumed.
+  const favourites = await readJson<unknown>(LEGACY_FAVOURITES_KEY, null);
+  if (!Array.isArray(favourites)) return;
+
+  const states = await getSoundStates();
+  const migrated: SoundStates = { ...states };
+  for (const id of favourites) {
+    // A sound the old build shipped may have left the catalogue since, and saving state
+    // against an id nothing can show would strand it.
+    if (typeof id !== 'string' || !findSound(id)) continue;
+    migrated[id] = { ...DEFAULT_SOUND_STATE, ...migrated[id], saved: true };
+  }
+
+  await writeJson(KEY, migrated);
+  await removeKey(LEGACY_FAVOURITES_KEY);
 }
 
 /**

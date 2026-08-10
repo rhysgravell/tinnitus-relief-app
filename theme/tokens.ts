@@ -149,6 +149,7 @@ export const SPACE = {
   s30: 30,
   s34: 34,
   s40: 40,
+  s44: 44,
 } as const;
 
 export const LAYOUT = {
@@ -199,7 +200,9 @@ export const TYPE = {
   cardTitleLarge: { fontFamily: FONT.sansSemiBold, fontSize: 19, lineHeight: 24 },
   rowTitle: { fontFamily: FONT.sansSemiBold, fontSize: 16, lineHeight: 21 },
   buttonLabel: { fontFamily: FONT.sansSemiBold, fontSize: 16, lineHeight: 21 },
-  gridCardTitle: { fontFamily: FONT.sansSemiBold, fontSize: 15, lineHeight: 20 },
+  // The 15pt semibold title, on a grid card and on the info cards alike. Named for its
+  // size rather than for the grid, since the design reuses it in seven places.
+  cardTitleSmall: { fontFamily: FONT.sansSemiBold, fontSize: 15, lineHeight: 20 },
   // Pills carry the label's weight rather than its size: 14px throughout, 400 when
   // unselected (`bodySecondary`), 500 once filled, and 600 for the session timer.
   pillLabelSelected: { fontFamily: FONT.sansMedium, fontSize: 14, lineHeight: 21 },
