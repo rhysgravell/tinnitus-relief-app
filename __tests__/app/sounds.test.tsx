@@ -20,9 +20,21 @@ jest.mock('expo-router', () => ({
 const push = jest.fn();
 const mockUseFocusEffect = jest.mocked(useFocusEffect);
 
+/**
+ * Yesterday at 22:30. Relative to the clock rather than a fixed date, because the card
+ * words itself relative to now — a hardcoded date reads as "Last night" on the day it is
+ * written and "3 days ago" by the end of the week.
+ */
+function lastNight(): string {
+  const when = new Date();
+  when.setDate(when.getDate() - 1);
+  when.setHours(22, 30, 0, 0);
+  return when.toISOString();
+}
+
 const lastSession: LastSession = {
   soundId: 'underwater',
-  endedAt: '2026-08-08T22:30:00',
+  endedAt: lastNight(),
   durationMinutes: 42,
   timerMinutes: 45,
 };
