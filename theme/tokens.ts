@@ -148,6 +148,7 @@ export const SPACE = {
   s26: 26,
   s30: 30,
   s34: 34,
+  s40: 40,
 } as const;
 
 export const LAYOUT = {

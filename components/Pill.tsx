@@ -18,6 +18,11 @@ type Props = {
    * the width, so they size from the row rather than from their labels.
    */
   size?: 'default' | 'compact' | 'block';
+  /**
+   * Spoken name, for a label that is an abbreviation or a glyph — "45m", "∞". Defaults to
+   * the label itself, which is right for the ordinary case.
+   */
+  accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
 };
 
@@ -31,6 +36,7 @@ export function Pill({
   onPress,
   tone = 'ink',
   size = 'default',
+  accessibilityLabel,
   style,
 }: Props) {
   const { colors } = useTheme();
@@ -40,6 +46,7 @@ export function Pill({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ selected }}
       // The pills stand 37–43pt tall, so the hit area is grown to clear the 44pt minimum.
       hitSlop={SPACE.s6}

@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import { SavedStar } from './SavedStar';
-import { LAYOUT, OVERLAY } from '../theme/tokens';
+import { ThemeProvider } from '../theme/ThemeProvider';
+import { COLORS, LAYOUT, OVERLAY } from '../theme/tokens';
 
 const onPress = jest.fn();
 
@@ -67,5 +68,44 @@ describe('SavedStar', () => {
     const style = StyleSheet.flatten(star().props.style) as Record<string, unknown>;
     expect(style.backgroundColor).toBe(OVERLAY.chip);
     expect(style.shadowOpacity).toBeUndefined();
+  });
+});
+
+describe('SavedStar on a surface', () => {
+  function renderBare(saved: boolean) {
+    render(
+      <ThemeProvider scheme="dark">
+        <SavedStar saved={saved} soundName="Underwater" onPress={onPress} variant="bare" />
+      </ThemeProvider>
+    );
+  }
+
+  it('drops the chip, which would be a hole in a surface', () => {
+    renderBare(false);
+    const style = StyleSheet.flatten(star().props.style) as Record<string, unknown>;
+    expect(style.backgroundColor).toBe('transparent');
+  });
+
+  it('takes its colours from the palette rather than the artwork overlay', () => {
+    renderBare(true);
+    expect(StyleSheet.flatten(screen.getByText('★').props.style).color).toBe(COLORS.dark.primary);
+
+    screen.rerender(
+      <ThemeProvider scheme="dark">
+        <SavedStar saved={false} soundName="Underwater" onPress={onPress} variant="bare" />
+      </ThemeProvider>
+    );
+    expect(StyleSheet.flatten(screen.getByText('☆').props.style).color).toBe(COLORS.dark.textMuted);
+  });
+
+  it('draws the glyph larger, with no chip to constrain it', () => {
+    renderBare(false);
+    expect(StyleSheet.flatten(screen.getByText('☆').props.style).fontSize).toBe(20);
+  });
+
+  it('keeps the 44pt hit area and the labels it has on artwork', () => {
+    renderBare(false);
+    expect(star().props.hitSlop).toBe((LAYOUT.minTouchTarget - 28) / 2);
+    expect(star().props.accessibilityLabel).toBe('Save Underwater');
   });
 });

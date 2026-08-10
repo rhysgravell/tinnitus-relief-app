@@ -1,5 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEFAULT_SETTINGS, getSettings, updateSettings } from './settings';
+import {
+  DEFAULT_SETTINGS,
+  TIMER_OPTIONS,
+  getSettings,
+  timerAccessibilityLabel,
+  timerLabel,
+  updateSettings,
+} from './settings';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -36,5 +43,26 @@ describe('settings', () => {
     const settings = await getSettings();
     expect(settings.fadeOut).toBe(false);
     expect(settings.mixWithOthers).toBe(DEFAULT_SETTINGS.mixWithOthers);
+  });
+});
+
+describe('timer options', () => {
+  it('offers the four presets and the infinite option', () => {
+    expect(TIMER_OPTIONS).toEqual([15, 30, 45, 60, null]);
+  });
+
+  it('offers the default timer as one of the options', () => {
+    // A default the timer row cannot show would leave the session opening on no pill.
+    expect(TIMER_OPTIONS).toContain(DEFAULT_SETTINGS.defaultTimerMinutes);
+  });
+
+  it('abbreviates a preset and marks the infinite option with a glyph', () => {
+    expect(timerLabel(45)).toBe('45m');
+    expect(timerLabel(null)).toBe('∞');
+  });
+
+  it('spells the labels out for assistive tech', () => {
+    expect(timerAccessibilityLabel(45)).toBe('45 minutes');
+    expect(timerAccessibilityLabel(null)).toBe('No timer');
   });
 });

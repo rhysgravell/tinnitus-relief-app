@@ -23,6 +23,26 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderTime: '21:00',
 };
 
+/**
+ * The timer lengths on offer, in the order the design lays them out. Null is the ∞ pill —
+ * play until stopped. They live here rather than on the Session screen because Settings
+ * offers the same list for the default.
+ */
+export const TIMER_OPTIONS: readonly (number | null)[] = [15, 30, 45, 60, null];
+
+/** What a timer length reads as on a pill. */
+export function timerLabel(minutes: number | null): string {
+  return minutes === null ? '∞' : `${minutes}m`;
+}
+
+/**
+ * What a timer length is read out as. The pill labels are glyphs and abbreviations, which
+ * assistive tech either spells out or skips.
+ */
+export function timerAccessibilityLabel(minutes: number | null): string {
+  return minutes === null ? 'No timer' : `${minutes} minutes`;
+}
+
 export async function getSettings(): Promise<Settings> {
   // Spread over the defaults so a build that adds a setting reads sensibly against
   // state written by the build before it.
