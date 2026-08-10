@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { readJson, writeJson } from './storage';
+import { readJson, removeKey, writeJson } from './storage';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -30,5 +30,17 @@ describe('readJson', () => {
     await writeJson('no', false);
     expect(await readJson('zero', 99)).toBe(0);
     expect(await readJson('no', true)).toBe(false);
+  });
+});
+
+describe('removeKey', () => {
+  it('leaves the key reading as missing', async () => {
+    await writeJson('key', { a: 1 });
+    await removeKey('key');
+    expect(await readJson('key', 'fallback')).toBe('fallback');
+  });
+
+  it('says nothing about a key that was never there', async () => {
+    await expect(removeKey('missing')).resolves.toBeUndefined();
   });
 });

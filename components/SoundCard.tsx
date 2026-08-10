@@ -59,7 +59,7 @@ export function SoundCard({ sound, saved, onPress, onToggleSaved }: Props) {
           </View>
         </View>
         <View style={styles.body}>
-          <Text variant="gridCardTitle" numberOfLines={1}>
+          <Text variant="cardTitleSmall" numberOfLines={1}>
             {sound.name}
           </Text>
           <Text variant="meta" tone="faint" style={styles.descriptor} numberOfLines={1}>

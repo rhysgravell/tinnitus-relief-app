@@ -85,6 +85,9 @@ beforeEach(() => {
 
   jest.spyOn(settings, 'getSettings').mockResolvedValue(DEFAULT_SETTINGS);
   jest.spyOn(soundState, 'getSoundStates').mockResolvedValue({});
+  // The provider migrates the pre-redesign favourites before its first read. That is not
+  // what these tests are about, and it reaches real storage on every one of them.
+  jest.spyOn(soundState, 'migrateFavourites').mockResolvedValue(undefined);
   jest.spyOn(soundState, 'recordSession').mockResolvedValue(DEFAULT_SOUND_STATE);
   jest.spyOn(soundState, 'toggleSaved').mockResolvedValue(true);
   jest.spyOn(sessions, 'setLastSession').mockResolvedValue(undefined);

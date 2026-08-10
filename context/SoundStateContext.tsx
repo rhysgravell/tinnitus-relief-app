@@ -1,8 +1,17 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { ReactNode } from 'react';
 import {
   DEFAULT_SOUND_STATE,
   getSoundStates,
+  migrateFavourites,
   toggleSaved as persistSaved,
 } from '../store/soundState';
 import type { SoundState, SoundStates } from '../store/soundState';
@@ -14,6 +23,11 @@ type SoundStateContextValue = {
   ready: boolean;
   stateFor: (id: string) => SoundState;
   toggleSaved: (id: string) => Promise<void>;
+  /**
+   * Re-reads storage. The session writes its counts and timers on the way out without
+   * going through here, so a screen that shows them asks for a fresh read on focus.
+   */
+  refresh: () => Promise<void>;
 };
 
 const SoundStateContext = createContext<SoundStateContextValue | null>(null);
@@ -32,11 +46,15 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    getSoundStates().then((stored) => {
-      if (!active) return;
-      setStates(stored);
-      setReady(true);
-    });
+    // Favourites from before the redesign are folded in first, so a returning user's
+    // saved list is already correct by the time anything reads it.
+    migrateFavourites()
+      .then(() => getSoundStates())
+      .then((stored) => {
+        if (!active) return;
+        setStates(stored);
+        setReady(true);
+      });
     return () => {
       active = false;
     };
@@ -47,6 +65,9 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
     [states]
   );
 
+  /** Toggles whose write has not landed yet. Read by `refresh` — see below. */
+  const writing = useRef(0);
+
   const toggleSaved = useCallback(async (id: string) => {
     // Flipped in memory first so the star answers the tap rather than the disk. The store
     // derives the same flip from the same stored value, so the two agree.
@@ -54,12 +75,26 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
       ...current,
       [id]: { ...DEFAULT_SOUND_STATE, ...current[id], saved: !current[id]?.saved },
     }));
-    await persistSaved(id);
+    writing.current += 1;
+    try {
+      await persistSaved(id);
+    } finally {
+      writing.current -= 1;
+    }
+  }, []);
+
+  const refresh = useCallback(async () => {
+    const stored = await getSoundStates();
+    // A star tapped while this read was in the air is not in what came back, and the tap
+    // is the newer truth of the two — so the read is dropped rather than allowed to undo
+    // it. Whatever it would have brought arrives on the next focus instead.
+    if (writing.current > 0) return;
+    setStates(stored);
   }, []);
 
   const value = useMemo<SoundStateContextValue>(
-    () => ({ states, ready, stateFor, toggleSaved }),
-    [states, ready, stateFor, toggleSaved]
+    () => ({ states, ready, stateFor, toggleSaved, refresh }),
+    [states, ready, stateFor, toggleSaved, refresh]
   );
 
   return <SoundStateContext.Provider value={value}>{children}</SoundStateContext.Provider>;

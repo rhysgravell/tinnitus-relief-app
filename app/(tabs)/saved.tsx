@@ -1,87 +1,110 @@
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { useCallback } from 'react';
+import { FlatList, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SoundscapeCard } from '../../components/SoundscapeCard';
-import { useFavourites } from '../../context/FavouritesContext';
-import { useAudioPlayer } from '../../hooks/useAudioPlayer';
-import { SOUNDSCAPES } from '../../store/soundscapes';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Card } from '../../components/Card';
+import { EmptyState } from '../../components/EmptyState';
+import { SavedRow } from '../../components/SavedRow';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { Text } from '../../components/Text';
+import { useSoundStates } from '../../context/SoundStateContext';
+import { useTheme } from '../../theme/ThemeProvider';
+import { LAYOUT, SPACE } from '../../theme/tokens';
+import { savedMeta, savedSounds } from '../../store/saved';
+import { isPlayable } from '../../store/sounds';
 
+/**
+ * Saved — the shortlist. Everything here is one tap from playing, in the order the user
+ * actually reaches for them.
+ */
 export default function SavedScreen() {
-  const { playingId, loadingId, errorId, toggle } = useAudioPlayer();
-  const { favourites, toggleFavourite } = useFavourites();
+  const router = useRouter();
+  const { colors } = useTheme();
+  const { states, ready, refresh } = useSoundStates();
 
-  const favouriteSoundscapes = SOUNDSCAPES.filter((s) => favourites.includes(s.id));
+  // The session writes its count and timer to storage as it closes, without going through
+  // the context, so those numbers are stale here until they are read again.
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
+  );
+
+  const entries = savedSounds(states);
+  // Only the sounds that have a recording are on the phone, so only they can be promised.
+  const playable = entries.filter(({ sound }) => isPlayable(sound));
+
+  const openSession = (soundId: string) => {
+    router.push({ pathname: '/session', params: { soundId } });
+  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>Favourites</Text>
-        <Text style={styles.subheading}>Your saved soundscapes</Text>
-      </View>
-      {favouriteSoundscapes.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyText}>No favourites yet.</Text>
-          <Text style={styles.emptyHint}>Tap the ☆ on any soundscape to save it here.</Text>
-        </View>
+    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.background }]}>
+      <ScreenHeader title="Saved" subtitle="The ones that work for you" />
+
+      {/* Nothing until the read lands: an empty state that flashed on every visit would
+          suggest the list had been lost. */}
+      {!ready ? null : entries.length === 0 ? (
+        <EmptyState
+          testID="saved-empty"
+          glyph="☆"
+          title="Nothing saved yet"
+          body="Tap the star on any sound and it'll wait for you here — with the volume and timer you last used."
+          action={{ label: 'Browse sounds', onPress: () => router.navigate('/') }}
+        />
       ) : (
         <FlatList
-          data={favouriteSoundscapes}
-          keyExtractor={(item) => item.id}
+          data={entries}
+          keyExtractor={({ sound }) => sound.id}
           contentContainerStyle={styles.list}
           renderItem={({ item }) => (
-            <SoundscapeCard
-              soundscape={item}
-              isPlaying={playingId === item.id}
-              isLoading={loadingId === item.id}
-              isFavourite={true}
-              hasError={errorId === item.id}
-              onPress={() => toggle(item)}
-              onFavouritePress={() => toggleFavourite(item.id)}
+            <SavedRow
+              sound={item.sound}
+              meta={savedMeta(item)}
+              onPress={() => openSession(item.sound.id)}
             />
           )}
+          ListFooterComponent={
+            playable.length > 0 ? <OfflineNote count={playable.length} /> : null
+          }
         />
       )}
     </SafeAreaView>
   );
 }
 
+/**
+ * The reassurance under the list. It matters more than it looks: the app's job happens at
+ * 3am, and knowing it does not need a connection is part of trusting it to be there.
+ */
+function OfflineNote({ count }: { count: number }) {
+  return (
+    <Card tone="alt" style={styles.note}>
+      <Text variant="cardTitleSmall">Downloaded for offline</Text>
+      <Text variant="bodySecondary" tone="muted" style={styles.noteBody}>
+        {count === 1
+          ? 'It came with the app — so it plays in flight mode, at 3am, with no signal.'
+          : 'They came with the app — so they play in flight mode, at 3am, with no signal.'}
+      </Text>
+    </Card>
+  );
+}
+
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#0a1628',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-  },
-  heading: {
-    color: '#e8f0fe',
-    fontSize: 28,
-    fontWeight: '700',
-  },
-  subheading: {
-    color: '#7a8aa0',
-    fontSize: 15,
-    marginTop: 4,
   },
   list: {
-    paddingHorizontal: 16,
+    paddingHorizontal: LAYOUT.screenGutter,
+    paddingBottom: SPACE.s20,
+    gap: SPACE.s10,
   },
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 32,
+  note: {
+    // On top of the list's own gap, as the design sets the note a little apart from the
+    // rows it is describing.
+    marginTop: SPACE.s8,
   },
-  emptyText: {
-    color: '#e8f0fe',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  emptyHint: {
-    color: '#7a8aa0',
-    fontSize: 14,
-    textAlign: 'center',
+  noteBody: {
+    marginTop: SPACE.s4,
   },
 });

@@ -5,15 +5,19 @@ import * as store from '../store/soundState';
 
 /** A probe that reports the context back through the tree. */
 function Probe({ id = 'underwater' }: { id?: string }) {
-  const { ready, stateFor, toggleSaved } = useSoundStates();
+  const { ready, stateFor, toggleSaved, refresh } = useSoundStates();
 
   return (
     <>
       <Text testID="ready">{String(ready)}</Text>
       <Text testID="saved">{String(stateFor(id).saved)}</Text>
       <Text testID="timer">{String(stateFor(id).lastTimerMinutes)}</Text>
+      <Text testID="sessions">{String(stateFor(id).sessionCount)}</Text>
       <Pressable testID="toggle" onPress={() => toggleSaved(id)}>
         <Text>toggle</Text>
+      </Pressable>
+      <Pressable testID="refresh" onPress={() => refresh()}>
+        <Text>refresh</Text>
       </Pressable>
     </>
   );
@@ -98,6 +102,71 @@ describe('SoundStateProvider', () => {
     fireEvent.press(screen.getByTestId('toggle'));
 
     await waitFor(() => expect(store.toggleSaved).toHaveBeenCalledWith('underwater'));
+  });
+
+  it('picks up what another screen wrote when asked to refresh', async () => {
+    // The session records its count and timer straight to storage as it closes, so a
+    // screen showing those numbers has to ask for them again.
+    const read = jest.spyOn(store, 'getSoundStates').mockResolvedValue({});
+    render(
+      <SoundStateProvider>
+        <Probe />
+      </SoundStateProvider>
+    );
+    await waitFor(() => expect(value('ready')).toBe('true'));
+
+    read.mockResolvedValue({
+      underwater: { ...store.DEFAULT_SOUND_STATE, sessionCount: 15, lastTimerMinutes: 30 },
+    });
+    fireEvent.press(screen.getByTestId('refresh'));
+
+    await waitFor(() => expect(value('sessions')).toBe('15'));
+    expect(value('timer')).toBe('30');
+  });
+
+  it('does not let a refresh undo a star whose write is still in the air', async () => {
+    // Tapping a star and switching tabs puts a read and a write in flight together. The
+    // read cannot see the tap, so letting it win would silently drop the star.
+    const read = jest.spyOn(store, 'getSoundStates').mockResolvedValue({});
+    jest.spyOn(store, 'toggleSaved').mockReturnValue(new Promise<boolean>(() => {}));
+
+    render(
+      <SoundStateProvider>
+        <Probe />
+      </SoundStateProvider>
+    );
+    await waitFor(() => expect(value('ready')).toBe('true'));
+
+    fireEvent.press(screen.getByTestId('toggle'));
+    expect(value('saved')).toBe('true');
+
+    // What storage still holds: the write has not landed.
+    read.mockResolvedValue({});
+    fireEvent.press(screen.getByTestId('refresh'));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+
+    expect(value('saved')).toBe('true');
+  });
+
+  it('carries the old favourites over before the first read', async () => {
+    // The other way round and the first paint would show a returning user an empty list.
+    const order: string[] = [];
+    jest.spyOn(store, 'migrateFavourites').mockImplementation(async () => {
+      order.push('migrate');
+    });
+    jest.spyOn(store, 'getSoundStates').mockImplementation(async () => {
+      order.push('read');
+      return {};
+    });
+
+    render(
+      <SoundStateProvider>
+        <Probe />
+      </SoundStateProvider>
+    );
+    await waitFor(() => expect(value('ready')).toBe('true'));
+
+    expect(order).toEqual(['migrate', 'read']);
   });
 
   it('toggles back off again', async () => {
