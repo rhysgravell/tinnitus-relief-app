@@ -1,14 +1,14 @@
 import { act, renderHook } from '@testing-library/react-native';
-import { useSessionClock } from './useSessionClock';
+import { useCountdownClock } from './useCountdownClock';
 
-type Options = Parameters<typeof useSessionClock>[0];
+type Options = Parameters<typeof useCountdownClock>[0];
 
 const MINUTE = 60 * 1000;
 
 function setup(options: Partial<Options> = {}) {
   const onExpire = jest.fn();
   const initial: Options = { running: true, timerMinutes: 45, onExpire, ...options };
-  const rendered = renderHook((props: Options) => useSessionClock(props), {
+  const rendered = renderHook((props: Options) => useCountdownClock(props), {
     initialProps: initial,
   });
   return { ...rendered, onExpire, initial };
@@ -29,7 +29,7 @@ afterEach(() => {
   jest.useRealTimers();
 });
 
-describe('useSessionClock', () => {
+describe('useCountdownClock', () => {
   it('starts at zero with the full timer remaining', () => {
     const { result } = setup();
     expect(result.current.elapsedSeconds).toBe(0);

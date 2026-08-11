@@ -1,4 +1,4 @@
-import { greetingFor, relativeDayLabel } from './time';
+import { formatTimeOfDay, greetingFor, parseTimeOfDay, relativeDayLabel } from './time';
 
 /** Local time, since both functions read the local calendar day. */
 function at(iso: string): Date {
@@ -62,5 +62,46 @@ describe('relativeDayLabel', () => {
     expect(relativeDayLabel(at('2026-08-08T23:00:00'), at('2026-08-09T08:00:00'))).toBe(
       'Last night'
     );
+  });
+});
+
+describe('parseTimeOfDay', () => {
+  it('reads a stored reminder time', () => {
+    expect(parseTimeOfDay('22:30')).toEqual({ hour: 22, minute: 30 });
+  });
+
+  it('reads midnight and the last minute of the day', () => {
+    expect(parseTimeOfDay('00:00')).toEqual({ hour: 0, minute: 0 });
+    expect(parseTimeOfDay('23:59')).toEqual({ hour: 23, minute: 59 });
+  });
+
+  it('accepts a single-digit hour', () => {
+    expect(parseTimeOfDay('9:05')).toEqual({ hour: 9, minute: 5 });
+  });
+
+  it.each(['', '2230', '22.30', 'half ten', '22:3', '22:300'])(
+    'refuses %p rather than guessing at it',
+    (value) => {
+      expect(parseTimeOfDay(value)).toBeNull();
+    }
+  );
+
+  it.each(['24:00', '25:30', '22:60'])('refuses %p, which is not a time', (value) => {
+    // A value written by another build must not end up scheduling a reminder for hour 47.
+    expect(parseTimeOfDay(value)).toBeNull();
+  });
+});
+
+describe('formatTimeOfDay', () => {
+  it('writes the 24 hour clock the design uses', () => {
+    expect(formatTimeOfDay({ hour: 22, minute: 30 })).toBe('22:30');
+  });
+
+  it('pads both halves so the column does not jump', () => {
+    expect(formatTimeOfDay({ hour: 9, minute: 5 })).toBe('09:05');
+  });
+
+  it('round-trips what it parsed', () => {
+    expect(formatTimeOfDay(parseTimeOfDay('07:45')!)).toBe('07:45');
   });
 });

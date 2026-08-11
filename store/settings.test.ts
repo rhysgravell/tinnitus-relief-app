@@ -6,6 +6,7 @@ import {
   timerAccessibilityLabel,
   timerLabel,
   updateSettings,
+  windDownAt,
 } from './settings';
 
 beforeEach(async () => {
@@ -64,5 +65,35 @@ describe('timer options', () => {
   it('spells the labels out for assistive tech', () => {
     expect(timerAccessibilityLabel(45)).toBe('45 minutes');
     expect(timerAccessibilityLabel(null)).toBe('No timer');
+  });
+});
+
+describe('the wind-down reminder', () => {
+  it('starts switched off', async () => {
+    // Turning it on asks the OS for permission to notify. Asking before the user has shown
+    // any interest in a reminder is the wrong way round.
+    expect((await getSettings()).windDownEnabled).toBe(false);
+  });
+
+  it('reads the stored time as a clock time', () => {
+    expect(windDownAt({ ...DEFAULT_SETTINGS, windDownTime: '21:15' })).toEqual({
+      hour: 21,
+      minute: 15,
+    });
+  });
+
+  it('falls back to the default for a stored value that is not a time', () => {
+    // Rather than leaving the switch on with nothing behind it.
+    expect(windDownAt({ ...DEFAULT_SETTINGS, windDownTime: 'bedtime' })).toEqual(
+      windDownAt(DEFAULT_SETTINGS)
+    );
+  });
+
+  it('defaults to half past ten', () => {
+    expect(windDownAt(DEFAULT_SETTINGS)).toEqual({ hour: 22, minute: 30 });
+  });
+
+  it('keeps the stored string and the clock time in step', () => {
+    expect(DEFAULT_SETTINGS.windDownTime).toBe('22:30');
   });
 });

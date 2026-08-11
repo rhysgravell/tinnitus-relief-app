@@ -20,6 +20,32 @@ export function greetingFor(now: Date): string {
   return 'Good morning';
 }
 
+/** A time on the clock, with no date attached — what a reminder is set to. */
+export type TimeOfDay = { hour: number; minute: number };
+
+/**
+ * Reads an "HH:mm" setting.
+ *
+ * Returns null for anything that is not a real time, so a value written by another build
+ * or a corrupt entry cannot end up scheduling a reminder for hour 47.
+ */
+export function parseTimeOfDay(value: string): TimeOfDay | null {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) return null;
+
+  return { hour, minute };
+}
+
+/** "22:30" — the 24 hour clock the design writes these in. */
+export function formatTimeOfDay({ hour, minute }: TimeOfDay): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${pad(hour)}:${pad(minute)}`;
+}
+
 /** Sessions before this hour belong to the night before, as far as the wording goes. */
 const NIGHT_UNTIL = 5;
 
