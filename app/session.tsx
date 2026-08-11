@@ -12,7 +12,7 @@ import { TransportButton } from '../components/TransportButton';
 import { VolumeSlider } from '../components/VolumeSlider';
 import { useSoundStates } from '../context/SoundStateContext';
 import { useSessionAudio } from '../hooks/useSessionAudio';
-import { useSessionClock } from '../hooks/useSessionClock';
+import { useCountdownClock } from '../hooks/useCountdownClock';
 import { useSessionSetup } from '../hooks/useSessionSetup';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
@@ -79,7 +79,7 @@ function Session() {
     ready: seeded,
   } = useSessionSetup(sound?.id, settings);
 
-  const { elapsedSeconds, remainingSeconds, restart } = useSessionClock({
+  const { elapsedSeconds, remainingSeconds, restart } = useCountdownClock({
     // Held until the remembered setup lands, so the clock and the sound start together.
     // Held for a sound with no recording too, which is also what keeps it out of the
     // history: the guard below reads a clock that never left zero.

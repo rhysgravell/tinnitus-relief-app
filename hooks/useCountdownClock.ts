@@ -6,14 +6,14 @@ const TICK_MS = 1000;
 type Options = {
   /** Ticks while true, holds while false. Pausing the sound pauses the clock with it. */
   running: boolean;
-  /** The selected timer in minutes, or null for the ∞ pill. */
+  /** How long it runs for, or null to count up with no end — the session's ∞ pill. */
   timerMinutes: number | null;
-  /** Called once when the timer runs out. Not called at all on the ∞ timer. */
+  /** Called once when the time runs out. Not called at all when there is no limit. */
   onExpire: () => void;
 };
 
-type SessionClock = {
-  /** How long the session has played for, paused time excluded. */
+type CountdownClock = {
+  /** How long it has run for, paused time excluded. */
   elapsedSeconds: number;
   /** Counts down to zero, or null when there is no timer to count. */
   remainingSeconds: number | null;
@@ -26,13 +26,14 @@ type SessionClock = {
 };
 
 /**
- * The session's clock: elapsed up, remaining down, and one call when the timer expires.
+ * A clock that can be paused: elapsed up, remaining down, and one call when it runs out.
+ * The session runs on it, and so does the guided breathing.
  *
- * Elapsed time is measured against the wall clock rather than counted in ticks. The sound
+ * Elapsed time is measured against the wall clock rather than counted in ticks. A sound
  * keeps playing while the app is backgrounded but timers there are throttled or stopped
  * outright, so a tick-counted clock would drift behind the audio it is meant to describe.
  */
-export function useSessionClock({ running, timerMinutes, onExpire }: Options): SessionClock {
+export function useCountdownClock({ running, timerMinutes, onExpire }: Options): CountdownClock {
   const [elapsedMs, setElapsedMs] = useState(0);
   /** Time banked by the segments that have already played, so a pause does not reset it. */
   const bankedRef = useRef(0);
