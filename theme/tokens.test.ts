@@ -1,5 +1,14 @@
 import { FONT_ASSETS } from './fonts';
-import { CHART_RAMP, COLORS, FONT, OVERLAY, RADIUS, SPACE, TYPE } from './tokens';
+import {
+  CHART_RAMP,
+  COLORS,
+  FONT,
+  LOUDNESS_HEIGHTS,
+  OVERLAY,
+  RADIUS,
+  SPACE,
+  TYPE,
+} from './tokens';
 
 describe('colour palettes', () => {
   it('defines the same keys for light and dark', () => {
@@ -28,11 +37,11 @@ describe('colour palettes', () => {
 });
 
 describe('pills', () => {
-  it('keeps the pill label a step off the body colour in both palettes', () => {
-    // An unselected pill's label is lighter than body text in light and lighter than the
-    // muted text in night — it is a control, not copy.
-    expect(COLORS.light.pillLabel).not.toBe(COLORS.light.text);
-    expect(COLORS.dark.pillLabel).not.toBe(COLORS.dark.textMuted);
+  it('keeps the secondary ink a step off the body colour in both palettes', () => {
+    // An unselected pill's label, and the sentence under the trend, sit lighter than body
+    // text in light and lighter than the muted text in night.
+    expect(COLORS.light.textSecondary).not.toBe(COLORS.light.text);
+    expect(COLORS.dark.textSecondary).not.toBe(COLORS.dark.textMuted);
   });
 
   it('changes only the weight of the label across the pill states', () => {
@@ -91,6 +100,14 @@ describe('scales', () => {
   it('ramps the chart tints across four steps ending on the primary green', () => {
     expect(CHART_RAMP).toHaveLength(4);
     expect(CHART_RAMP[CHART_RAMP.length - 1]).toBe(COLORS.light.primary);
+  });
+
+  it('gives the loudness ladder a rung per level, rising', () => {
+    // Both check-in charts read off this: five taps on the scale, and one bar per logged
+    // day on the trend. A flat or falling rung would invert the chart.
+    expect(LOUDNESS_HEIGHTS).toHaveLength(5);
+    expect([...LOUDNESS_HEIGHTS]).toEqual([...LOUDNESS_HEIGHTS].sort((a, b) => a - b));
+    expect(Math.max(...LOUDNESS_HEIGHTS)).toBeLessThanOrEqual(100);
   });
 });
 

@@ -1,12 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  getCheckIn,
+  draftStatus,
+  EMPTY_DRAFT,
   getCheckIns,
-  getRecentCheckIns,
+  LOUDNESS_LEVELS,
   MOOD_OPTIONS,
   saveCheckIn,
+  saveLabel,
   today,
 } from './checkIns';
+import type { CheckIn } from './checkIns';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -55,28 +58,6 @@ describe('check-ins', () => {
       '2026-08-08',
     ]);
   });
-
-  it('finds an entry by date', async () => {
-    await saveCheckIn({ date: '2026-08-08', loudness: 3, mood: 'calm' });
-    expect((await getCheckIn('2026-08-08'))?.mood).toBe('calm');
-    expect(await getCheckIn('2026-08-07')).toBeUndefined();
-  });
-
-  it('takes the most recent entries for the trend, oldest first', async () => {
-    for (const day of ['04', '05', '06', '07', '08']) {
-      await saveCheckIn({ date: `2026-08-${day}`, loudness: 3, mood: 'calm' });
-    }
-    expect((await getRecentCheckIns(3)).map((c) => c.date)).toEqual([
-      '2026-08-06',
-      '2026-08-07',
-      '2026-08-08',
-    ]);
-  });
-
-  it('returns everything when fewer entries exist than the trend window', async () => {
-    await saveCheckIn({ date: '2026-08-08', loudness: 3, mood: 'calm' });
-    expect(await getRecentCheckIns(14)).toHaveLength(1);
-  });
 });
 
 describe('mood options', () => {
@@ -97,5 +78,41 @@ describe('mood options', () => {
     for (const { label } of MOOD_OPTIONS) {
       expect(label).toMatch(/^[A-Za-z ]+$/);
     }
+  });
+});
+
+describe('the loudness scale', () => {
+  it('runs from one to five', () => {
+    expect(LOUDNESS_LEVELS).toEqual([1, 2, 3, 4, 5]);
+  });
+});
+
+describe('draft status', () => {
+  const stored: CheckIn = { date: '2026-08-08', loudness: 3, mood: 'calm' };
+
+  it('is incomplete until both questions are answered', () => {
+    expect(draftStatus(EMPTY_DRAFT, undefined)).toBe('incomplete');
+    expect(draftStatus({ loudness: 3, mood: null }, undefined)).toBe('incomplete');
+    expect(draftStatus({ loudness: null, mood: 'calm' }, undefined)).toBe('incomplete');
+  });
+
+  it('is new when the day has not been logged yet', () => {
+    expect(draftStatus({ loudness: 3, mood: 'calm' }, undefined)).toBe('new');
+  });
+
+  it('is saved when it matches what is stored', () => {
+    expect(draftStatus({ loudness: 3, mood: 'calm' }, stored)).toBe('saved');
+  });
+
+  it('is changed when either answer differs from what is stored', () => {
+    expect(draftStatus({ loudness: 4, mood: 'calm' }, stored)).toBe('changed');
+    expect(draftStatus({ loudness: 3, mood: 'tired' }, stored)).toBe('changed');
+  });
+
+  it('labels the button by what pressing it would do', () => {
+    expect(saveLabel('incomplete')).toBe('Save today');
+    expect(saveLabel('new')).toBe('Save today');
+    expect(saveLabel('changed')).toBe('Update today');
+    expect(saveLabel('saved')).toBe('Saved');
   });
 });
