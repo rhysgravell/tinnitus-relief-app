@@ -37,14 +37,17 @@ export type Palette = {
   onPrimary: string;
   /** Headings and body copy. */
   text: string;
+  /**
+   * A step lighter than `text`: an unselected pill's label, and the sentence under the
+   * check-in trend. Not `textMuted` — this is copy to be read, only not shouted.
+   */
+  textSecondary: string;
   /** Subtitles and descriptions. */
   textMuted: string;
   /** Card meta lines. */
   textFaint: string;
   /** Labels and tertiary text. */
   textSubtle: string;
-  /** The label on an unselected pill — a step lighter than `text`. */
-  pillLabel: string;
   /** Row separators inside cards, tab bar top edge. */
   hairline: string;
   /** The lighter separator used between rows of a settings card. */
@@ -55,6 +58,8 @@ export type Palette = {
   borderStrong: string;
   /** Slider tracks and off toggles. */
   track: string;
+  /** An unpicked bar on the check-in loudness scale. */
+  barIdle: string;
   /** Outer breathing ring. */
   ringOuter: string;
   /** Inner breathing ring. */
@@ -69,15 +74,16 @@ const light: Palette = {
   primary: '#3F6B5C',
   onPrimary: '#F4F8F6',
   text: '#16211F',
+  textSecondary: '#3D4E4A',
   textMuted: '#5F726D',
   textFaint: '#7C8C88',
   textSubtle: '#8A9995',
-  pillLabel: '#3D4E4A',
   hairline: '#DCE4E1',
   hairlineInner: '#E7EDEA',
   border: '#DCE4E1',
   borderStrong: '#CDD8D4',
   track: '#D6E0DC',
+  barIdle: '#DDE6E2',
   ringOuter: '#C9DBD2',
   ringInner: '#A8C6BA',
 };
@@ -94,15 +100,18 @@ const dark: Palette = {
   primary: '#8FB3A4',
   onPrimary: '#0E1A1B',
   text: '#EAF1EE',
+  textSecondary: '#A9BCB8',
   textMuted: '#8FA3A0',
   textFaint: '#6F8582',
   textSubtle: '#6F8582',
-  pillLabel: '#A9BCB8',
   hairline: '#1E3133',
   hairlineInner: '#1E3133',
   border: '#253C3E',
   borderStrong: '#2E4749',
   track: '#243A3C',
+  // The night palette gives no separate value for this, as it gives none for the light
+  // screens it would appear on — the track colour reads correctly on the card surface.
+  barIdle: '#243A3C',
   ringOuter: '#2C4A4B',
   ringInner: '#3C6260',
 };
@@ -116,6 +125,16 @@ export type Scheme = keyof typeof COLORS;
  * direction without needing a legend.
  */
 export const CHART_RAMP = ['#C6D6CF', '#A6C2B6', '#7FA795', '#3F6B5C'] as const;
+
+/**
+ * Bar height per loudness level, 1 to 5, as a percentage of the chart's height.
+ *
+ * One ladder serves both check-in bar charts: the scale shows all five rungs so the taps
+ * read as a scale, and the trend plots each day onto the rung it was logged at. The rise
+ * is uneven, as the design draws it — the gap between "loud" and "overwhelming" is not
+ * the gap between "barely there" and "faint".
+ */
+export const LOUDNESS_HEIGHTS = [24, 38, 52, 70, 88] as const;
 
 /**
  * Colours for controls that sit on artwork rather than on a surface. They are outside the

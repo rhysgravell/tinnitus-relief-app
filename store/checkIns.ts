@@ -17,6 +17,14 @@ export const MOOD_OPTIONS: { id: Mood; label: string }[] = [
 /** 1 is "Barely there", 5 is "Overwhelming". */
 export type Loudness = 1 | 2 | 3 | 4 | 5;
 
+export const LOUDNESS_LEVELS: readonly Loudness[] = [1, 2, 3, 4, 5];
+
+/**
+ * Only the two ends of the scale are named. Naming all five would ask the user to agree
+ * with a word for their own tinnitus; the ends set the range and the rest is theirs.
+ */
+export const LOUDNESS_ENDS = { low: 'Barely there', high: 'Overwhelming' } as const;
+
 export type CheckIn = {
   /** "YYYY-MM-DD" local date. One check-in per day. */
   date: string;
@@ -27,12 +35,17 @@ export type CheckIn = {
 /** The trend needs three entries before the generated insight sentence is shown. */
 export const MIN_ENTRIES_FOR_TREND = 3;
 
-export function today(now: Date = new Date()): string {
+/** A date's "YYYY-MM-DD" key. Also what the trend window is built out of. */
+export function localDate(date: Date): string {
   // Built from local parts rather than toISOString, which would shift the date across
   // midnight for anyone west of UTC — precisely when this app gets used.
-  const month = `${now.getMonth() + 1}`.padStart(2, '0');
-  const day = `${now.getDate()}`.padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+export function today(now: Date = new Date()): string {
+  return localDate(now);
 }
 
 /** Oldest first, so the trend chart can render straight from this. */
@@ -49,11 +62,34 @@ export async function saveCheckIn(entry: CheckIn): Promise<CheckIn[]> {
   return next;
 }
 
-export async function getCheckIn(date: string): Promise<CheckIn | undefined> {
-  return (await getCheckIns()).find((c) => c.date === date);
+/** What the screen has collected so far. Either answer can still be missing. */
+export type CheckInDraft = { loudness: Loudness | null; mood: Mood | null };
+
+export const EMPTY_DRAFT: CheckInDraft = { loudness: null, mood: null };
+
+/**
+ * Where the draft stands against what is already stored for the day. The save button reads
+ * this rather than tracking its own flags, so it can never claim to have saved something
+ * that has since been changed.
+ */
+export type DraftStatus = 'incomplete' | 'new' | 'changed' | 'saved';
+
+export function draftStatus(draft: CheckInDraft, stored: CheckIn | undefined): DraftStatus {
+  if (draft.loudness === null || draft.mood === null) return 'incomplete';
+  if (!stored) return 'new';
+  const same = stored.loudness === draft.loudness && stored.mood === draft.mood;
+  return same ? 'saved' : 'changed';
 }
 
-/** The most recent `days` entries, oldest first — "LAST 14 DAYS" on the trend header. */
-export async function getRecentCheckIns(days: number): Promise<CheckIn[]> {
-  return (await getCheckIns()).slice(-days);
+/**
+ * The button's label. It doubles as the confirmation: there is no toast in this design, so
+ * the word going from "Save today" to "Saved" is how the app says it landed.
+ */
+export function saveLabel(status: DraftStatus): string {
+  if (status === 'saved') return 'Saved';
+  return status === 'changed' ? 'Update today' : 'Save today';
+}
+
+export function draftFrom(entry: CheckIn | undefined): CheckInDraft {
+  return entry ? { loudness: entry.loudness, mood: entry.mood } : EMPTY_DRAFT;
 }

@@ -11,6 +11,7 @@ export type TextVariant = keyof typeof TYPE;
 /** Which palette colour the text takes. `inherit` leaves colour to the caller. */
 export type TextTone =
   | 'default'
+  | 'secondary'
   | 'muted'
   | 'faint'
   | 'subtle'
@@ -25,6 +26,7 @@ type ColorKey = {
 
 const TONE_COLORS: Record<Exclude<TextTone, 'inherit'>, ColorKey> = {
   default: 'text',
+  secondary: 'textSecondary',
   muted: 'textMuted',
   faint: 'textFaint',
   subtle: 'textSubtle',

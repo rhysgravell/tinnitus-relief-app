@@ -50,6 +50,11 @@ describe('Text', () => {
     expect(styleOf('Wind down for the night').color).toBe(COLORS.dark.textMuted);
   });
 
+  it('has a tone between body and muted, for copy that is read but not led with', () => {
+    render(<Text tone="secondary">Quieter lately</Text>);
+    expect(styleOf('Quieter lately').color).toBe(COLORS.light.textSecondary);
+  });
+
   it('sets no colour when the tone is inherited', () => {
     render(<Text tone="inherit">Inherited</Text>);
     expect(styleOf('Inherited').color).toBeUndefined();

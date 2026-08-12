@@ -66,8 +66,7 @@ export function Pill({
         variant={
           selected ? (tone === 'primary' ? 'pillLabelStrong' : 'pillLabelSelected') : 'bodySecondary'
         }
-        tone={selected ? 'onPrimary' : 'inherit'}
-        style={selected ? undefined : { color: colors.pillLabel }}
+        tone={selected ? 'onPrimary' : 'secondary'}
       >
         {label}
       </Text>

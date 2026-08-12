@@ -1,73 +1,132 @@
-import { useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useState } from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { MoodBubble } from '../../components/MoodBubble';
-import { COLUMN_GAP, GRID_PADDING, useBubbleGrid } from '../../hooks/useBubbleGrid';
-import { MOODS } from '../../store/moods';
+import { useFocusEffect } from 'expo-router';
+import { LoudnessScale } from '../../components/LoudnessScale';
+import { MoodChips } from '../../components/MoodChips';
+import { PrimaryButton } from '../../components/PrimaryButton';
+import { QuestionCard } from '../../components/QuestionCard';
+import { ScreenHeader } from '../../components/ScreenHeader';
+import { SectionLabel } from '../../components/SectionLabel';
+import { Text } from '../../components/Text';
+import { TextLink } from '../../components/TextLink';
+import { TrendChart } from '../../components/TrendChart';
+import { useCheckIn } from '../../hooks/useCheckIn';
+import { useTheme } from '../../theme/ThemeProvider';
+import { LAYOUT, SPACE } from '../../theme/tokens';
+import { saveLabel } from '../../store/checkIns';
+import {
+  hasEarlierThan,
+  loggedDays,
+  TREND_DAYS,
+  TREND_DAYS_WIDE,
+  trendCaption,
+  trendWindow,
+} from '../../store/trend';
 
+/**
+ * Check-in — how loud it was, how it felt, and what that has been doing.
+ *
+ * Loudness comes first because it is the thing that actually changes, and the trend sits
+ * directly underneath both questions so logging pays off in the same second it is done.
+ */
 export default function CheckInScreen() {
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [gridHeight, setGridHeight] = useState(0);
-  const { circleSize, leftColumn, rightColumn } = useBubbleGrid(MOODS, gridHeight);
+  const { colors } = useTheme();
+  const { ready, entries, draft, status, setLoudness, setMood, save, refresh } = useCheckIn();
+  const [wide, setWide] = useState(false);
 
-  const handleGridLayout = (event: LayoutChangeEvent) => {
-    if (gridHeight > 0) return;
-    setGridHeight(event.nativeEvent.layout.height);
-  };
-
-  const renderBubble = (mood: (typeof MOODS)[number], tone: 'a' | 'b') => (
-    <View key={mood.id} style={{ marginBottom: COLUMN_GAP }}>
-      <MoodBubble
-        mood={mood}
-        size={circleSize}
-        tone={tone}
-        isSelected={selectedId === mood.id}
-        onPress={() => setSelectedId(mood.id)}
-      />
-    </View>
+  // The first read, and every one after it. A screen left open overnight is showing
+  // yesterday, so coming back to it re-reads the date as well as the history.
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh])
   );
 
+  const days = trendWindow(entries, wide ? TREND_DAYS_WIDE : TREND_DAYS);
+  const logged = loggedDays(days);
+  const earlier = hasEarlierThan(entries, days);
+
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>Mood</Text>
-        <Text style={styles.subheading}>Track how you&rsquo;re feeling</Text>
-      </View>
-      <View style={[styles.grid, { opacity: gridHeight > 0 ? 1 : 0 }]} onLayout={handleGridLayout}>
-        <View style={{ width: circleSize }}>{leftColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'a' : 'b'))}</View>
-        <View style={{ width: circleSize, marginTop: circleSize / 2 }}>
-          {rightColumn.map((item, i) => renderBubble(item, i % 2 === 0 ? 'b' : 'a'))}
+    <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.background }]}>
+      {/* Two cards, a button and the trend overflow a small phone, so the screen scrolls —
+          the design's fixed frame is a large one. */}
+      <ScrollView contentContainerStyle={styles.content}>
+        <ScreenHeader title="How was today?" subtitle="Thirty seconds, once a day" />
+
+        <View style={styles.form}>
+          <QuestionCard testID="loudness-card" question="How loud was the ringing?">
+            <LoudnessScale value={draft.loudness} onChange={setLoudness} />
+          </QuestionCard>
+
+          <QuestionCard testID="mood-card" question="And how did you feel?" gap={SPACE.s12}>
+            <MoodChips value={draft.mood} onChange={setMood} />
+          </QuestionCard>
+
+          <PrimaryButton
+            label={saveLabel(status)}
+            onPress={save}
+            // Off both when there is nothing to save and when there is nothing left to
+            // save, which is what tells the user the last tap landed.
+            disabled={status === 'incomplete' || status === 'saved'}
+          />
         </View>
-      </View>
+
+        <View style={styles.trend}>
+          <View style={styles.trendHeader}>
+            <SectionLabel>{`Last ${wide ? TREND_DAYS_WIDE : TREND_DAYS} days`}</SectionLabel>
+            {/* Offered only when the wider window would actually show something more. */}
+            {earlier || wide ? (
+              <TextLink
+                testID="trend-range"
+                label={wide ? 'Show less' : 'See more'}
+                accessibilityLabel={`Show the last ${wide ? TREND_DAYS : TREND_DAYS_WIDE} days`}
+                onPress={() => setWide((current) => !current)}
+              />
+            ) : null}
+          </View>
+
+          {/* Nothing until the read lands, and no empty plot before the first check-in. */}
+          {ready && logged.length > 0 ? <TrendChart testID="trend-chart" days={days} /> : null}
+
+          {ready ? (
+            <Text
+              variant="bodySecondary"
+              tone="secondary"
+              // Set off from the chart, but needing no separation when there is no chart.
+              style={logged.length > 0 ? styles.caption : null}
+            >
+              {trendCaption(days)}
+            </Text>
+          ) : null}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    backgroundColor: '#0a1628',
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
+  content: {
+    paddingBottom: SPACE.s24,
   },
-  heading: {
-    color: '#e8f0fe',
-    fontSize: 28,
-    fontWeight: '700',
+  form: {
+    paddingHorizontal: LAYOUT.screenGutter,
+    gap: SPACE.s14,
   },
-  subheading: {
-    color: '#7a8aa0',
-    fontSize: 15,
-    marginTop: 4,
+  trend: {
+    paddingTop: SPACE.s24,
+    paddingHorizontal: LAYOUT.screenGutter,
   },
-  grid: {
-    flex: 1,
+  trendHeader: {
     flexDirection: 'row',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
-    paddingHorizontal: GRID_PADDING,
-    paddingBottom: 24,
+    marginBottom: SPACE.s14,
+  },
+  caption: {
+    marginTop: SPACE.s16,
   },
 });
