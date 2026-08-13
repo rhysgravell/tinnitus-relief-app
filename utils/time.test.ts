@@ -1,4 +1,10 @@
-import { formatTimeOfDay, greetingFor, parseTimeOfDay, relativeDayLabel } from './time';
+import {
+  formatTimeOfDay,
+  greetingFor,
+  parseTimeOfDay,
+  relativeDayLabel,
+  spokenTimeOfDay,
+} from './time';
 
 /** Local time, since both functions read the local calendar day. */
 function at(iso: string): Date {
@@ -103,5 +109,22 @@ describe('formatTimeOfDay', () => {
 
   it('round-trips what it parsed', () => {
     expect(formatTimeOfDay(parseTimeOfDay('07:45')!)).toBe('07:45');
+  });
+});
+
+describe('spokenTimeOfDay', () => {
+  it.each([
+    [{ hour: 21, minute: 0 }, '9 pm'],
+    [{ hour: 22, minute: 30 }, '10:30 pm'],
+    [{ hour: 7, minute: 45 }, '7:45 am'],
+    [{ hour: 12, minute: 0 }, '12 pm'],
+    [{ hour: 0, minute: 30 }, '12:30 am'],
+  ])('reads %j out as "%s"', (at, expected) => {
+    expect(spokenTimeOfDay(at)).toBe(expected);
+  });
+
+  it('drops the minutes on the hour rather than saying "9:00 pm"', () => {
+    // Which is how a person says it, and assistive tech reads the digits either way.
+    expect(spokenTimeOfDay({ hour: 21, minute: 0 })).not.toContain(':');
   });
 });

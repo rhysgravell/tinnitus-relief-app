@@ -58,8 +58,8 @@ beforeEach(() => {
   jest.spyOn(sessions, 'getLastSession').mockResolvedValue(null);
   jest.spyOn(soundState, 'getSoundStates').mockResolvedValue({});
   jest.spyOn(soundState, 'migrateFavourites').mockResolvedValue(undefined);
-  jest.spyOn(reminders, 'scheduleWindDown').mockResolvedValue('scheduled');
-  jest.spyOn(reminders, 'cancelWindDown').mockResolvedValue(undefined);
+  jest.spyOn(reminders, 'scheduleReminder').mockResolvedValue('scheduled');
+  jest.spyOn(reminders, 'cancelReminder').mockResolvedValue(undefined);
 });
 
 describe('Sleep screen', () => {
@@ -135,7 +135,7 @@ describe('Sleep screen', () => {
       fireEvent(reminder(), 'valueChange', true);
     });
 
-    expect(reminders.scheduleWindDown).toHaveBeenCalledWith({ hour: 22, minute: 30 });
+    expect(reminders.scheduleReminder).toHaveBeenCalledWith('windDown', { hour: 22, minute: 30 });
     expect(reminder().props.accessibilityState).toMatchObject({ checked: true });
   });
 
@@ -149,11 +149,11 @@ describe('Sleep screen', () => {
     await act(async () => {
       fireEvent(reminder(), 'valueChange', false);
     });
-    expect(reminders.cancelWindDown).toHaveBeenCalled();
+    expect(reminders.cancelReminder).toHaveBeenCalledWith('windDown');
   });
 
   it('puts the switch back and says why when notifications are refused', async () => {
-    jest.mocked(reminders.scheduleWindDown).mockResolvedValue('denied');
+    jest.mocked(reminders.scheduleReminder).mockResolvedValue('denied');
     await renderScreen();
 
     await act(async () => {

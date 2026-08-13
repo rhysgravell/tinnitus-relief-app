@@ -11,7 +11,7 @@ import { SectionLabel } from '../../components/SectionLabel';
 import { TonightCard } from '../../components/TonightCard';
 import { useSoundStates } from '../../context/SoundStateContext';
 import { useLastSession } from '../../hooks/useLastSession';
-import { useWindDown } from '../../hooks/useWindDown';
+import { useReminder } from '../../hooks/useReminder';
 import { ThemeProvider } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
 import { ROUTINE } from '../../store/routine';
@@ -37,7 +37,7 @@ function Sleep() {
   const router = useRouter();
   const { states } = useSoundStates();
   const { session } = useLastSession();
-  const windDown = useWindDown();
+  const windDown = useReminder('windDown');
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [breathing, setBreathing] = useState(false);
