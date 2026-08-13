@@ -46,6 +46,20 @@ export function formatTimeOfDay({ hour, minute }: TimeOfDay): string {
   return `${pad(hour)}:${pad(minute)}`;
 }
 
+/**
+ * The same time as it should be spoken: "10:30 pm", "9 pm". Assistive tech reads "22:30"
+ * out as a pair of numbers, and the on-screen 24 hour clock is the design's, not the
+ * user's — they may never have thought of half ten as 22:30.
+ */
+export function spokenTimeOfDay({ hour, minute }: TimeOfDay): string {
+  const period = hour < 12 ? 'am' : 'pm';
+  // Midnight and midday are 12, not 0 — the modulo gives 0 for both.
+  const onTheClock = hour % 12 === 0 ? 12 : hour % 12;
+  return minute === 0
+    ? `${onTheClock} ${period}`
+    : `${onTheClock}:${String(minute).padStart(2, '0')} ${period}`;
+}
+
 /** Sessions before this hour belong to the night before, as far as the wording goes. */
 const NIGHT_UNTIL = 5;
 

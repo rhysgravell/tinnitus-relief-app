@@ -10,16 +10,39 @@ import {
 } from 'expo-notifications';
 import type { TimeOfDay } from '../utils/time';
 
-/**
- * A fixed identifier rather than one kept in storage: scheduling with the same id replaces
- * what was there, so a reminder can never end up scheduled twice, and cancelling can name
- * this one without reaching for `cancelAllScheduledNotificationsAsync` — which would also
- * take out the check-in reminder once that exists.
- */
-const WIND_DOWN_ID = 'wind-down';
+/** The two reminders the app can schedule. Both are daily, and neither is on by default. */
+export type ReminderKind = 'windDown' | 'checkIn';
 
-/** Android groups notifications by channel, and one without a channel is silent. */
-const CHANNEL_ID = 'wind-down';
+type Reminder = {
+  /**
+   * A fixed identifier rather than one kept in storage: scheduling with the same id
+   * replaces what was there, so a reminder can never end up scheduled twice, and
+   * cancelling one can name it rather than reaching for
+   * `cancelAllScheduledNotificationsAsync` — which would take the other one with it.
+   *
+   * It doubles as the Android channel id: a notification without a channel is silent, and
+   * one channel per reminder is what lets the OS's own settings separate them.
+   */
+  id: string;
+  channelName: string;
+  title: string;
+  body: string;
+};
+
+const REMINDERS: Record<ReminderKind, Reminder> = {
+  windDown: {
+    id: 'wind-down',
+    channelName: 'Wind-down',
+    title: 'Time to wind down',
+    body: 'Start your sound and let the evening settle.',
+  },
+  checkIn: {
+    id: 'check-in',
+    channelName: 'Check-in',
+    title: 'How was today?',
+    body: 'Thirty seconds: how loud it was, and how you are.',
+  },
+};
 
 /**
  * What came of asking. `denied` means the OS refused — the caller has to put its switch
@@ -28,40 +51,45 @@ const CHANNEL_ID = 'wind-down';
 export type ReminderOutcome = 'scheduled' | 'denied';
 
 /**
- * Schedules the nightly wind-down reminder, asking permission the first time.
+ * Schedules a daily reminder, asking permission the first time.
  *
  * Permission is requested here rather than on launch: it is asked for at the moment the
- * user turns the reminder on, which is the only moment the request makes sense.
+ * user turns a reminder on, which is the only moment the request makes sense.
  */
-export async function scheduleWindDown(at: TimeOfDay): Promise<ReminderOutcome> {
+export async function scheduleReminder(
+  kind: ReminderKind,
+  at: TimeOfDay
+): Promise<ReminderOutcome> {
   if (!(await grantedPermission())) return 'denied';
 
+  const reminder = REMINDERS[kind];
+
   if (Platform.OS === 'android') {
-    await setNotificationChannelAsync(CHANNEL_ID, {
-      name: 'Wind-down',
+    await setNotificationChannelAsync(reminder.id, {
+      name: reminder.channelName,
       importance: AndroidImportance.DEFAULT,
     });
   }
 
   await scheduleNotificationAsync({
-    identifier: WIND_DOWN_ID,
+    identifier: reminder.id,
     content: {
-      title: 'Time to wind down',
-      body: 'Start your sound and let the evening settle.',
+      title: reminder.title,
+      body: reminder.body,
     },
     trigger: {
       type: SchedulableTriggerInputTypes.DAILY,
       hour: at.hour,
       minute: at.minute,
-      channelId: CHANNEL_ID,
+      channelId: reminder.id,
     },
   });
 
   return 'scheduled';
 }
 
-export async function cancelWindDown(): Promise<void> {
-  await cancelScheduledNotificationAsync(WIND_DOWN_ID);
+export async function cancelReminder(kind: ReminderKind): Promise<void> {
+  await cancelScheduledNotificationAsync(REMINDERS[kind].id);
 }
 
 /** Asks only if the answer is not already known, so a granted permission is not re-prompted. */

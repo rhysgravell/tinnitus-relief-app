@@ -218,6 +218,10 @@ export const TYPE = {
   emptyTitle: { fontFamily: FONT.serif, fontSize: 23, lineHeight: 29 },
   cardTitleLarge: { fontFamily: FONT.sansSemiBold, fontSize: 19, lineHeight: 24 },
   rowTitle: { fontFamily: FONT.sansSemiBold, fontSize: 16, lineHeight: 21 },
+  // The same size in regular weight, for a settings row. Semibold is right for a list you
+  // scan and wrong for one you read a line at a time — and a screen of bold rows would
+  // shout, which is the opposite of what this app is for.
+  rowLabel: { fontFamily: FONT.sans, fontSize: 16, lineHeight: 21 },
   buttonLabel: { fontFamily: FONT.sansSemiBold, fontSize: 16, lineHeight: 21 },
   // The 15pt semibold title, on a grid card and on the info cards alike. Named for its
   // size rather than for the grid, since the design reuses it in seven places.

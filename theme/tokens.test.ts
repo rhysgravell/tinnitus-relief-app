@@ -72,6 +72,14 @@ describe('typography', () => {
     expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize);
   });
 
+  it('offers a settings row title in regular weight beside the semibold one', () => {
+    // Same line, different weight: `rowTitle` heads a card, `rowLabel` sits in a list of
+    // settings, where a screen of bold rows would shout.
+    expect(TYPE.rowLabel.fontSize).toBe(TYPE.rowTitle.fontSize);
+    expect(TYPE.rowLabel.lineHeight).toBe(TYPE.rowTitle.lineHeight);
+    expect(TYPE.rowLabel.fontFamily).not.toBe(TYPE.rowTitle.fontFamily);
+  });
+
   it('does not set fontWeight alongside a custom family', () => {
     // Weight is baked into the family; setting both makes Android synthesise a bolder
     // face on top of an already-bold file.
