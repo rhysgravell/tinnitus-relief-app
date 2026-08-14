@@ -1,20 +1,27 @@
-import { useCallback, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import { getSettings, updateSettings } from '../store/settings';
 import type { Settings } from '../store/settings';
 
-type UseSettings = {
+type SettingsContextValue = {
   /** Null until storage has been read. Rows wait rather than render the wrong state. */
   settings: Settings | null;
   update: (patch: Partial<Settings>) => void;
 };
+
+const SettingsContext = createContext<SettingsContextValue | null>(null);
 
 /**
  * The stored settings, with each change applied on screen before it is written.
  *
  * A switch that waited on AsyncStorage would lag the thumb, and nothing here can fail in a
  * way the user needs to hear about — the reminders, which can, live in `useReminder`.
+ *
+ * Shared through a provider rather than read per screen because one of these settings is
+ * the app's palette: "Dark after sunset" has to repaint the screen it was switched on.
+ * Provided at the root, so it reaches the session modal as well as the tabs.
  */
-export function useSettings(): UseSettings {
+export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings | null>(null);
 
   useEffect(() => {
@@ -35,5 +42,19 @@ export function useSettings(): UseSettings {
     void updateSettings(patch);
   }, []);
 
-  return { settings, update };
+  const value = useMemo<SettingsContextValue>(() => ({ settings, update }), [settings, update]);
+
+  return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
+}
+
+/**
+ * Throws outside a provider rather than falling back to the defaults: a screen showing
+ * settings nobody had stored would look like it worked and quietly lose every change.
+ */
+export function useSettings(): SettingsContextValue {
+  const value = useContext(SettingsContext);
+  if (!value) {
+    throw new Error('useSettings must be used inside a SettingsProvider');
+  }
+  return value;
 }

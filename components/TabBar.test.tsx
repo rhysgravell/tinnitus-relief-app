@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { TABS, TabBar } from './TabBar';
+import { ThemeProvider } from '../theme/ThemeProvider';
 import { COLORS, FONT, LAYOUT } from '../theme/tokens';
 
 const emit = jest.fn(() => ({ defaultPrevented: false }));
@@ -88,6 +89,30 @@ describe('TabBar', () => {
     );
   });
 
+  it('follows the app into the dark after sunset', () => {
+    // The day screens take the night palette in the evening, and a pale bar under one of
+    // them would be the brightest thing on the phone at midnight.
+    render(
+      <ThemeProvider scheme="dark">
+        <TabBar {...props('check-in')} />
+      </ThemeProvider>
+    );
+    expect(StyleSheet.flatten(screen.getByTestId('tab-bar').props.style).backgroundColor).toBe(
+      COLORS.dark.background
+    );
+  });
+
+  it('stays dark under Sleep whatever the app is wearing', () => {
+    render(
+      <ThemeProvider scheme="light">
+        <TabBar {...props('sleep')} />
+      </ThemeProvider>
+    );
+    expect(StyleSheet.flatten(screen.getByTestId('tab-bar').props.style).backgroundColor).toBe(
+      COLORS.dark.background
+    );
+  });
+
   it('leaves room for the home indicator', () => {
     render(<TabBar {...props('index')} />);
     expect(StyleSheet.flatten(screen.getByTestId('tab-bar').props.style).paddingBottom).toBe(34);
@@ -127,8 +152,6 @@ describe('tab manifest', () => {
   });
 
   it('marks Sleep as the only night surface among the tabs', () => {
-    expect(TABS.filter((entry) => entry.scheme === 'dark').map((entry) => entry.name)).toEqual([
-      'sleep',
-    ]);
+    expect(TABS.filter((entry) => entry.nightSurface).map((entry) => entry.name)).toEqual(['sleep']);
   });
 });

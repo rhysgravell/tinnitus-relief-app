@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
 import SettingsScreen from '../../app/settings';
+import { SettingsProvider } from '../../context/SettingsContext';
 import * as reminders from '../../store/reminders';
 import * as settings from '../../store/settings';
 import { DEFAULT_SETTINGS } from '../../store/settings';
@@ -28,7 +29,13 @@ function stored(patch: Partial<settings.Settings> = {}) {
 
 /** Three reads land on mount: the settings, and one per reminder. */
 async function renderScreen() {
-  const rendered = render(<SettingsScreen />);
+  // The settings themselves come from the provider at the root of the app, since the
+  // palette is one of them and the switch has to repaint the screen it is on.
+  const rendered = render(
+    <SettingsProvider>
+      <SettingsScreen />
+    </SettingsProvider>
+  );
   await act(async () => {});
   return rendered;
 }
@@ -87,8 +94,7 @@ describe('Settings screen', () => {
     // Rows that appeared first and corrected themselves afterwards would have the user
     // reading a state that was never true.
     jest.mocked(settings.getSettings).mockReturnValue(new Promise(() => {}));
-    render(<SettingsScreen />);
-    await act(async () => {});
+    await renderScreen();
 
     expect(screen.queryByText('Default timer')).toBeNull();
     // The disclaimer is static, so it is there from the first frame.

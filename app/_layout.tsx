@@ -2,7 +2,10 @@ import { useEffect } from 'react';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { SettingsProvider } from '../context/SettingsContext';
 import { SoundStateProvider } from '../context/SoundStateContext';
+import { useAppScheme } from '../hooks/useAppScheme';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { FONT_ASSETS } from '../theme/fonts';
 
@@ -27,7 +30,24 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider scheme="light">
+    <SettingsProvider>
+      <App />
+    </SettingsProvider>
+  );
+}
+
+/**
+ * Split from the layout above so it can read the settings provider wrapping it: "Dark
+ * after sunset" decides the palette the whole app wears.
+ */
+function App() {
+  const scheme = useAppScheme();
+
+  return (
+    <ThemeProvider scheme={scheme}>
+      {/* The clock and the battery are part of the surface. Left to itself the status bar
+          draws in dark ink, which disappears against a night screen. */}
+      <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
       {/* Above the navigator, not inside the tabs: Session is presented from this stack, and
           it reads and writes the same per-sound state the tab screens do. */}
       <SoundStateProvider>

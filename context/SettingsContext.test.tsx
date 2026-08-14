@@ -1,10 +1,19 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
-import { useSettings } from './useSettings';
+import type { ReactNode } from 'react';
+import { SettingsProvider, useSettings } from './SettingsContext';
 import * as settings from '../store/settings';
 import { DEFAULT_SETTINGS } from '../store/settings';
 
+function wrapper({ children }: { children: ReactNode }) {
+  return <SettingsProvider>{children}</SettingsProvider>;
+}
+
+function renderSettings() {
+  return renderHook(() => useSettings(), { wrapper });
+}
+
 async function setup() {
-  const rendered = renderHook(() => useSettings());
+  const rendered = renderSettings();
   await waitFor(() => expect(rendered.result.current.settings).not.toBeNull());
   return rendered;
 }
@@ -18,7 +27,7 @@ beforeEach(() => {
 describe('useSettings', () => {
   it('holds nothing back until the read lands', async () => {
     // Rows rendered against a guess would flip under the reader a moment later.
-    const { result } = renderHook(() => useSettings());
+    const { result } = renderSettings();
     expect(result.current.settings).toBeNull();
     await act(async () => {});
   });
@@ -61,4 +70,34 @@ describe('useSettings', () => {
     await setup();
     expect(settings.updateSettings).not.toHaveBeenCalled();
   });
+
+  it('reads storage once however many screens are asking', async () => {
+    await renderTwoConsumers();
+    expect(settings.getSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it('tells everything reading it about a change at once', async () => {
+    // The palette is one of these settings, so the switch that changes it and the screen
+    // it sits on cannot be looking at two different copies.
+    const { result } = await renderTwoConsumers();
+
+    await act(async () => result.current.first.update({ darkAfterSunset: false }));
+
+    expect(result.current.first.settings?.darkAfterSunset).toBe(false);
+    expect(result.current.second.settings?.darkAfterSunset).toBe(false);
+  });
+
+  it('throws outside a provider', async () => {
+    // Silently falling back to the defaults would look like it worked and lose every change.
+    expect(() => renderHook(() => useSettings())).toThrow(/SettingsProvider/);
+  });
 });
+
+/** Two separate `useSettings` calls under one provider, as two screens would be. */
+async function renderTwoConsumers() {
+  const rendered = renderHook(() => ({ first: useSettings(), second: useSettings() }), {
+    wrapper,
+  });
+  await waitFor(() => expect(rendered.result.current.first.settings).not.toBeNull());
+  return rendered;
+}
