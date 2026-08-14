@@ -12,12 +12,20 @@ import RootLayout from '../../app/_layout';
 
 jest.mock('expo-font', () => ({ useFonts: jest.fn() }));
 
-// The layout wraps the navigator in the sound-state provider, which reads storage as it
-// mounts. That read is not what these tests are about, so the provider is a passthrough.
+// Both providers the layout wraps the navigator in read storage as they mount. Those reads
+// are not what these tests are about, so the providers are passthroughs — and the settings
+// one hands back the defaults, which is what the app runs on before its read lands anyway.
 jest.mock('../../context/SoundStateContext', () => ({
   SoundStateProvider: function SoundStateProvider({ children }: { children?: ReactNode }) {
     return children;
   },
+}));
+
+jest.mock('../../context/SettingsContext', () => ({
+  SettingsProvider: function SettingsProvider({ children }: { children?: ReactNode }) {
+    return children;
+  },
+  useSettings: () => ({ settings: null, update: jest.fn() }),
 }));
 
 jest.mock('expo-splash-screen', () => ({
@@ -26,6 +34,18 @@ jest.mock('expo-splash-screen', () => ({
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports -- a jest.mock factory is hoisted above the imports, so it cannot close over them */
+// The real status bar renders nothing to find. This one puts the ink colour on screen,
+// which is the app's scheme by another name.
+jest.mock('expo-status-bar', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+
+  return {
+    StatusBar: ({ style }: { style: string }) =>
+      React.createElement(Text, { testID: 'status-bar' }, style),
+  };
+});
+
 jest.mock('expo-router', () => {
   const React = require('react');
   const { Text, View } = require('react-native');
@@ -53,6 +73,16 @@ function fontState(loaded: boolean, error: Error | null = null) {
 beforeEach(() => {
   jest.clearAllMocks();
 });
+
+afterEach(() => {
+  jest.useRealTimers();
+});
+
+/** Fixes the hour, for the tests about the palette the app opens in. */
+function clockAt(hour: number) {
+  jest.useFakeTimers();
+  jest.setSystemTime(new Date(2026, 7, 14, hour, 0));
+}
 
 describe('RootLayout', () => {
   it('renders nothing while the fonts are still loading', () => {
@@ -98,6 +128,21 @@ describe('RootLayout', () => {
     fontState(true);
     render(<RootLayout />);
     expect(screen.getByTestId('screen-settings').props.children).not.toContain('presentation');
+  });
+
+  it('wears the light palette during the day', () => {
+    clockAt(14);
+    fontState(true);
+    render(<RootLayout />);
+    expect(screen.getByTestId('status-bar').props.children).toBe('dark');
+  });
+
+  it('wears the night palette after sunset', () => {
+    // Dark ink on a dark bar would leave the clock and the battery invisible.
+    clockAt(22);
+    fontState(true);
+    render(<RootLayout />);
+    expect(screen.getByTestId('status-bar').props.children).toBe('light');
   });
 
   it('renders anyway when font loading fails', () => {

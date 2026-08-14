@@ -12,8 +12,11 @@ export type Tab = {
   name: string;
   label: string;
   glyph: TabGlyphName;
-  /** Whether that screen is one of the night surfaces. */
-  scheme: Scheme;
+  /**
+   * Whether that screen is one of the night surfaces — dark at any hour. The rest follow
+   * the app, which is itself dark after sunset unless that has been turned off.
+   */
+  nightSurface: boolean;
 };
 
 /**
@@ -22,21 +25,26 @@ export type Tab = {
  * about which tabs exist.
  */
 export const TABS: readonly Tab[] = [
-  { name: 'index', label: 'Sounds', glyph: 'circle', scheme: 'light' },
-  { name: 'saved', label: 'Saved', glyph: 'star', scheme: 'light' },
-  { name: 'sleep', label: 'Sleep', glyph: 'moon', scheme: 'dark' },
-  { name: 'check-in', label: 'Check-in', glyph: 'square', scheme: 'light' },
+  { name: 'index', label: 'Sounds', glyph: 'circle', nightSurface: false },
+  { name: 'saved', label: 'Saved', glyph: 'star', nightSurface: false },
+  { name: 'sleep', label: 'Sleep', glyph: 'moon', nightSurface: true },
+  { name: 'check-in', label: 'Check-in', glyph: 'square', nightSurface: false },
 ] as const;
 
 /**
  * The bottom tab bar.
  *
  * It adopts the palette of the screen it is sitting under, because Sleep is a night
- * surface and a mist-coloured bar below it would cut the screen in half.
+ * surface and a mist-coloured bar below it would cut the screen in half. Under any other
+ * tab that is whatever the app itself is wearing, which after sunset is the night palette
+ * too.
  */
 export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
+  const { scheme: appScheme } = useTheme();
   const focusedRoute = state.routes[state.index]?.name;
-  const scheme = TABS.find((tab) => tab.name === focusedRoute)?.scheme ?? 'light';
+  const scheme: Scheme = TABS.find((tab) => tab.name === focusedRoute)?.nightSurface
+    ? 'dark'
+    : appScheme;
 
   return (
     <ThemeProvider scheme={scheme}>
