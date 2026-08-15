@@ -1,3 +1,5 @@
+import { existsSync } from 'fs';
+import { join } from 'path';
 import appConfig from '../app.json';
 import { COLORS } from '../theme/tokens';
 
@@ -52,5 +54,23 @@ describe('the audio plugin', () => {
     // The whole job happens at 3am with the screen locked. This is the default today, and
     // spelled out so a change of default cannot take it away quietly.
     expect(pluginOptions('expo-audio')).toMatchObject({ enableBackgroundPlayback: true });
+  });
+});
+
+describe('the notifications plugin', () => {
+  it('gives Android a silhouette to draw the reminder with', () => {
+    // Android draws a notification's small icon from its alpha channel alone. Left to
+    // itself it uses the app icon, which is full colour, and full colour flattens to a
+    // white blob in the status bar — at 10pm, from a reminder this app has just asked
+    // permission to send.
+    const icon = pluginOptions('expo-notifications')?.icon;
+    expect(icon).toBe('./assets/android-icon-monochrome.png');
+    expect(existsSync(join(__dirname, '..', icon as string))).toBe(true);
+  });
+
+  it('tints it with the accent the rest of the app uses', () => {
+    expect(pluginOptions('expo-notifications')).toMatchObject({
+      color: COLORS.light.primary,
+    });
   });
 });
