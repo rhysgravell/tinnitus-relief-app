@@ -7,6 +7,7 @@ import { OutlineButton } from '../../components/OutlineButton';
 import { RoutineStep } from '../../components/RoutineStep';
 import { ScreenBackground } from '../../components/ScreenBackground';
 import { ScreenHeader } from '../../components/ScreenHeader';
+import { ScreenStatusBar } from '../../components/ScreenStatusBar';
 import { SectionLabel } from '../../components/SectionLabel';
 import { TonightCard } from '../../components/TonightCard';
 import { useSoundStates } from '../../context/SoundStateContext';
@@ -28,6 +29,8 @@ export default function SleepRoute() {
   // rather than reading the root one. The tab bar takes the same scheme from the manifest.
   return (
     <ThemeProvider scheme="dark">
+      {/* And the status bar with it, for as long as this is the tab being looked at. */}
+      <ScreenStatusBar />
       <Sleep />
     </ThemeProvider>
   );

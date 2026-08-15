@@ -15,6 +15,9 @@ import { DEFAULT_SOUND_STATE } from '../../store/soundState';
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
   useLocalSearchParams: jest.fn(),
+  // The session sets the status bar's ink while it is the screen in front. The real hook
+  // needs a navigator, and this screen's own tests are not about the status bar.
+  useFocusEffect: jest.fn(),
 }));
 
 jest.mock('expo-audio', () => ({

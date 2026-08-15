@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import type { ReactNode } from 'react';
+import { useColorScheme } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import RootLayout from '../../app/_layout';
@@ -11,6 +12,8 @@ import RootLayout from '../../app/_layout';
 // runtime bundle. See the guard in ./routes.test.ts.
 
 jest.mock('expo-font', () => ({ useFonts: jest.fn() }));
+
+jest.mock('react-native/Libraries/Utilities/useColorScheme');
 
 // Both providers the layout wraps the navigator in read storage as they mount. Those reads
 // are not what these tests are about, so the providers are passthroughs — and the settings
@@ -70,19 +73,15 @@ function fontState(loaded: boolean, error: Error | null = null) {
   mockUseFonts.mockReturnValue([loaded, error]);
 }
 
+/** What the phone says its own appearance is, which is what the app follows. */
+function phoneIs(scheme: 'light' | 'dark') {
+  jest.mocked(useColorScheme).mockReturnValue(scheme);
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
+  phoneIs('light');
 });
-
-afterEach(() => {
-  jest.useRealTimers();
-});
-
-/** Fixes the hour, for the tests about the palette the app opens in. */
-function clockAt(hour: number) {
-  jest.useFakeTimers();
-  jest.setSystemTime(new Date(2026, 7, 14, hour, 0));
-}
 
 describe('RootLayout', () => {
   it('renders nothing while the fonts are still loading', () => {
@@ -130,16 +129,15 @@ describe('RootLayout', () => {
     expect(screen.getByTestId('screen-settings').props.children).not.toContain('presentation');
   });
 
-  it('wears the light palette during the day', () => {
-    clockAt(14);
+  it('wears the light palette while the phone is light', () => {
     fontState(true);
     render(<RootLayout />);
     expect(screen.getByTestId('status-bar').props.children).toBe('dark');
   });
 
-  it('wears the night palette after sunset', () => {
+  it('wears the night palette once the phone has gone dark', () => {
     // Dark ink on a dark bar would leave the clock and the battery invisible.
-    clockAt(22);
+    phoneIs('dark');
     fontState(true);
     render(<RootLayout />);
     expect(screen.getByTestId('status-bar').props.children).toBe('light');

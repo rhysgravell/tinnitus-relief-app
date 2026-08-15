@@ -203,9 +203,11 @@ describe('the playback settings', () => {
 });
 
 describe('the night settings', () => {
-  it('explains what dimming after sunset means', async () => {
+  it('says where dimming after sunset is actually decided', async () => {
+    // The phone is what switches, so the line points at the setting that does the work
+    // rather than leaving the user to wonder why nothing happened at sunset.
     await renderScreen();
-    expect(screen.getByText("The app dims itself when you'd want it to")).toBeTruthy();
+    expect(screen.getByText('Follows your phone, which can switch itself at sunset')).toBeTruthy();
   });
 
   it('stores whether to dim after sunset', async () => {
