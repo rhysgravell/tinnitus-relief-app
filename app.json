@@ -32,7 +32,14 @@
     "plugins": [
       "expo-router",
       "expo-asset",
-      "expo-audio",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "enableBackgroundPlayback": true
+        }
+      ],
       "expo-font",
       "expo-notifications"
     ]
