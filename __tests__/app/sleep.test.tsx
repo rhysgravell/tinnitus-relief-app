@@ -9,7 +9,7 @@ import * as settings from '../../store/settings';
 import * as soundState from '../../store/soundState';
 import { DEFAULT_SETTINGS } from '../../store/settings';
 import { DEFAULT_SOUND_STATE } from '../../store/soundState';
-import type { LastSession } from '../../store/sessions';
+import type { Session } from '../../store/sessions';
 
 // This test lives outside `app/` on purpose — Expo Router bundles every file under the app
 // directory as a route. See the guard in ./routes.test.ts.
@@ -22,7 +22,7 @@ jest.mock('expo-router', () => ({
 
 const push = jest.fn();
 
-const lastSession: LastSession = {
+const lastSession: Session = {
   soundId: 'evening-forest',
   endedAt: new Date().toISOString(),
   durationMinutes: 30,

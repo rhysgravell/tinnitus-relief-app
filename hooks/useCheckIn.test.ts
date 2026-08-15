@@ -1,7 +1,9 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useCheckIn } from './useCheckIn';
 import * as checkIns from '../store/checkIns';
+import * as sessions from '../store/sessions';
 import type { CheckIn } from '../store/checkIns';
+import type { Session } from '../store/sessions';
 
 /** Midday on 14 August 2026, the day every one of these tests is "today". */
 const NOW = new Date(2026, 7, 14, 12, 0);
@@ -11,6 +13,19 @@ const logged: CheckIn = { date: '2026-08-14', loudness: 2, mood: 'calm' };
 
 function history(entries: CheckIn[]) {
   jest.spyOn(checkIns, 'getCheckIns').mockResolvedValue(entries);
+}
+
+/** Sessions that ended at 10pm on each of the given dates. */
+function ranOn(dates: string[]) {
+  const log: Session[] = dates.map((date) => ({
+    soundId: 'underwater',
+    // Local rather than UTC: which night a session counts for is a local-clock question,
+    // and a Z time would land on a different date depending on where the test is run.
+    endedAt: new Date(`${date}T22:00:00`).toISOString(),
+    durationMinutes: 30,
+    timerMinutes: 45,
+  }));
+  jest.spyOn(sessions, 'getSessions').mockResolvedValue(log);
 }
 
 /** Mounts and does the read the screen's focus effect would do. */
@@ -28,6 +43,7 @@ beforeEach(() => {
   jest.useFakeTimers();
   jest.setSystemTime(NOW);
   history([]);
+  ranOn([]);
   jest.spyOn(checkIns, 'saveCheckIn').mockImplementation(async (entry) => [entry]);
 });
 
@@ -146,6 +162,28 @@ describe('useCheckIn', () => {
 
     expect(result.current.draft).toEqual({ loudness: null, mood: null });
     expect(result.current.status).toBe('incomplete');
+  });
+
+  it('brings back the nights a session ran on', async () => {
+    // The sentence under the chart is written from these and the check-ins together.
+    ranOn(['2026-08-12', '2026-08-13']);
+    const { result } = await setup();
+
+    expect([...result.current.nights].sort()).toEqual(['2026-08-12', '2026-08-13']);
+  });
+
+  it('has no nights to correlate against before the read lands', async () => {
+    ranOn(['2026-08-13']);
+    const { result } = renderHook(() => useCheckIn());
+    expect(result.current.nights.size).toBe(0);
+    await act(async () => {});
+  });
+
+  it('reads the check-ins and the sessions in one go', async () => {
+    // Two reads one after the other would write the caption on screen twice.
+    await setup();
+    expect(checkIns.getCheckIns).toHaveBeenCalledTimes(1);
+    expect(sessions.getSessions).toHaveBeenCalledTimes(1);
   });
 
   it('files a check-in saved after midnight under the new day', async () => {

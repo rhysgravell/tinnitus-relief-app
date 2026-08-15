@@ -17,7 +17,7 @@ import { useCountdownClock } from '../hooks/useCountdownClock';
 import { useSessionSetup } from '../hooks/useSessionSetup';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
-import { setLastSession } from '../store/sessions';
+import { addSession } from '../store/sessions';
 import { DEFAULT_SETTINGS, getSettings } from '../store/settings';
 import type { Settings } from '../store/settings';
 import { recordSession } from '../store/soundState';
@@ -125,7 +125,7 @@ function Session() {
       const final = finalRef.current;
       if (final.elapsedSeconds < MINIMUM_RECORDED_SECONDS) return;
       void recordSession(id, { volume: final.volume, timerMinutes: final.timerMinutes });
-      void setLastSession({
+      void addSession({
         soundId: id,
         endedAt: new Date().toISOString(),
         durationMinutes: wholeMinutes(final.elapsedSeconds),

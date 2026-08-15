@@ -53,13 +53,22 @@ export function hasEarlierThan(entries: CheckIn[], window: TrendDay[]): boolean 
 }
 
 /**
+ * How many check-ins each side of the comparison needs before the nights with a session
+ * are worth setting against the nights without. One of each is a pair of days, not a
+ * pattern.
+ */
+const MIN_PER_SIDE = 2;
+
+/**
  * The sentence under the chart.
  *
- * It compares the recent half of the window against the earlier half, because the useful
- * question is not how loud today was but whether it is going anywhere. Under three
- * check-ins there is no answer to give, so it says what it is waiting for instead.
+ * Where there are sessions to correlate against, it says what they line up with — which is
+ * the question someone is actually asking of this screen. Otherwise it compares the recent
+ * half of the window against the earlier half, because the useful question is not how loud
+ * today was but whether it is going anywhere. Under three check-ins there is no answer to
+ * give, so it says what it is waiting for instead.
  */
-export function trendCaption(window: TrendDay[]): string {
+export function trendCaption(window: TrendDay[], nights: ReadonlySet<string> = new Set()): string {
   const logged = loggedDays(window);
 
   if (logged.length === 0) {
@@ -73,6 +82,9 @@ export function trendCaption(window: TrendDay[]): string {
       : `${remaining} more check-ins and this starts to show a direction.`;
   }
 
+  const againstSessions = sessionComparison(window, logged, nights);
+  if (againstSessions) return againstSessions;
+
   const half = Math.floor(logged.length / 2);
   const recent = mean(logged.slice(-half));
   const earlier = mean(logged.slice(0, logged.length - half));
@@ -84,6 +96,37 @@ export function trendCaption(window: TrendDay[]): string {
 
   const direction = change < 0 ? 'Quieter' : 'Louder';
   return `${direction} lately — averaging ${format(recent)}, against ${format(earlier)} before that.`;
+}
+
+/**
+ * The nights a session ran on, set against the nights one did not, or null when there is
+ * not enough of either to say anything.
+ *
+ * The tally is every night in the window a session ran on, logged or not — "11 of the last
+ * 14" is a count of nights, not of check-ins. Which way round the cause runs is left alone:
+ * a loud night is a reason to reach for a session as much as the other way about, and this
+ * screen reports what the user's own log says rather than explaining it to them.
+ */
+function sessionComparison(
+  window: TrendDay[],
+  logged: CheckIn[],
+  nights: ReadonlySet<string>
+): string | null {
+  const withSession = logged.filter(({ date }) => nights.has(date));
+  const without = logged.filter(({ date }) => !nights.has(date));
+  if (withSession.length < MIN_PER_SIDE || without.length < MIN_PER_SIDE) return null;
+
+  const ran = window.filter(({ date }) => nights.has(date)).length;
+  const tally = `${ran} of the last ${window.length}`;
+  const change = mean(withSession) - mean(without);
+
+  if (Math.abs(change) < MEANINGFUL_CHANGE) {
+    return `About the same either way — you ran a session on ${tally} nights.`;
+  }
+
+  return change < 0
+    ? `Quieter on the nights you ran a session — ${tally}.`
+    : `Louder on the nights you ran a session — ${tally}.`;
 }
 
 /**

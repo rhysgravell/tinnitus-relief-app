@@ -7,14 +7,14 @@ import { useTheme } from '../theme/ThemeProvider';
 import { SPACE } from '../theme/tokens';
 import { relativeDayLabel } from '../utils/time';
 import type { Sound } from '../store/sounds';
-import type { LastSession } from '../store/sessions';
+import type { Session } from '../store/sessions';
 
 const ARTWORK_HEIGHT = 104;
 const PLAY_SIZE = 54;
 
 type Props = {
   sound: Sound;
-  session: LastSession;
+  session: Session;
   onPress: () => void;
   /** Injectable so the "Last night" wording can be tested without freezing the clock. */
   now?: Date;

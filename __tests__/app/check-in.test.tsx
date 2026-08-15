@@ -3,7 +3,9 @@ import { useEffect } from 'react';
 import { useFocusEffect } from 'expo-router';
 import CheckInScreen from '../../app/(tabs)/check-in';
 import * as checkIns from '../../store/checkIns';
+import * as sessions from '../../store/sessions';
 import type { CheckIn, Loudness } from '../../store/checkIns';
+import type { Session } from '../../store/sessions';
 
 // This test lives outside `app/` on purpose — Expo Router bundles every file under the app
 // directory as a route. See the guard in ./routes.test.ts.
@@ -25,6 +27,17 @@ function entry(date: string, loudness: Loudness, mood: checkIns.Mood = 'calm'): 
 
 function history(entries: CheckIn[]) {
   jest.spyOn(checkIns, 'getCheckIns').mockResolvedValue(entries);
+}
+
+/** Sessions that ended at 10pm on each of the given nights, in local time. */
+function ranOn(dates: string[]) {
+  const log: Session[] = dates.map((date) => ({
+    soundId: 'underwater',
+    endedAt: new Date(`${date}T22:00:00`).toISOString(),
+    durationMinutes: 30,
+    timerMinutes: 45,
+  }));
+  jest.spyOn(sessions, 'getSessions').mockResolvedValue(log);
 }
 
 /** The history read lands on mount, so every case waits for it. */
@@ -61,6 +74,7 @@ beforeEach(() => {
   });
 
   history([]);
+  ranOn([]);
   jest.spyOn(checkIns, 'saveCheckIn').mockImplementation(async (saved) => [saved]);
 });
 
@@ -171,6 +185,24 @@ describe('Check-in screen', () => {
     // Outside the window, and not dragged into it.
     expect(screen.queryByTestId('trend-bar-2026-08-01')).toBeNull();
     expect(screen.getByText(/^Quieter lately/)).toBeTruthy();
+  });
+
+  it('sets the loud nights against the quiet ones once there are sessions behind them', async () => {
+    // The sentence the design asks for, and the reason the log exists at all.
+    history([
+      entry('2026-08-09', 4),
+      entry('2026-08-10', 2),
+      entry('2026-08-11', 4),
+      entry('2026-08-12', 2),
+      entry('2026-08-13', 4),
+      entry('2026-08-14', 2),
+    ]);
+    ranOn(['2026-08-10', '2026-08-12', '2026-08-14']);
+    await renderScreen();
+
+    expect(
+      screen.getByText('Quieter on the nights you ran a session — 3 of the last 14.')
+    ).toBeTruthy();
   });
 
   it('offers the wider window only when there is history behind the fortnight', async () => {

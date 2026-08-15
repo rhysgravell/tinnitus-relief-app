@@ -93,7 +93,7 @@ beforeEach(() => {
   jest.spyOn(soundState, 'migrateFavourites').mockResolvedValue(undefined);
   jest.spyOn(soundState, 'recordSession').mockResolvedValue(DEFAULT_SOUND_STATE);
   jest.spyOn(soundState, 'toggleSaved').mockResolvedValue(true);
-  jest.spyOn(sessions, 'setLastSession').mockResolvedValue(undefined);
+  jest.spyOn(sessions, 'addSession').mockResolvedValue(undefined);
 });
 
 afterEach(() => {
@@ -251,7 +251,7 @@ describe('Session screen', () => {
       volume: 0.55,
       timerMinutes: 45,
     });
-    expect(sessions.setLastSession).toHaveBeenCalledWith(
+    expect(sessions.addSession).toHaveBeenCalledWith(
       expect.objectContaining({ soundId: 'underwater', durationMinutes: 20, timerMinutes: 45 })
     );
   });
@@ -261,7 +261,7 @@ describe('Session screen', () => {
     await renderSession();
     advance(10 * MINUTE);
     screen.unmount();
-    expect(sessions.setLastSession).toHaveBeenCalled();
+    expect(sessions.addSession).toHaveBeenCalled();
   });
 
   it('does not remember a session nobody listened to', async () => {
@@ -272,7 +272,7 @@ describe('Session screen', () => {
     screen.unmount();
 
     expect(soundState.recordSession).not.toHaveBeenCalled();
-    expect(sessions.setLastSession).not.toHaveBeenCalled();
+    expect(sessions.addSession).not.toHaveBeenCalled();
   });
 
   it('releases the player when it closes', async () => {
@@ -303,7 +303,7 @@ describe('Session screen', () => {
     screen.unmount();
 
     expect(soundState.recordSession).not.toHaveBeenCalled();
-    expect(sessions.setLastSession).not.toHaveBeenCalled();
+    expect(sessions.addSession).not.toHaveBeenCalled();
   });
 
   it('handles a link to a sound that is not in this build', async () => {

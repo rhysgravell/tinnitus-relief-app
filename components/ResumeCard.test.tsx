@@ -4,21 +4,21 @@ import { ResumeCard } from './ResumeCard';
 import { COLORS, RADIUS } from '../theme/tokens';
 import { findSound } from '../store/sounds';
 import type { Sound } from '../store/sounds';
-import type { LastSession } from '../store/sessions';
+import type { Session } from '../store/sessions';
 
 const sound = findSound('underwater') as Sound;
 const onPress = jest.fn();
 
 const NOW = new Date('2026-08-09T20:00:00');
 
-const session: LastSession = {
+const session: Session = {
   soundId: sound.id,
   endedAt: '2026-08-08T22:30:00',
   durationMinutes: 42,
   timerMinutes: 45,
 };
 
-function renderCard(overrides: Partial<LastSession> = {}) {
+function renderCard(overrides: Partial<Session> = {}) {
   return render(
     <ResumeCard
       sound={sound}
