@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { useEffect } from 'react';
+import { Pressable } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import SleepScreen from '../../app/(tabs)/sleep';
+import { SettingsProvider, useSettings } from '../../context/SettingsContext';
 import { SoundStateProvider } from '../../context/SoundStateContext';
 import * as reminders from '../../store/reminders';
 import * as sessions from '../../store/sessions';
@@ -32,9 +34,11 @@ const lastSession: Session = {
 /** Several reads land on mount — settings, the last session, the provider. */
 async function renderScreen() {
   const rendered = render(
-    <SoundStateProvider>
-      <SleepScreen />
-    </SoundStateProvider>
+    <SettingsProvider>
+      <SoundStateProvider>
+        <SleepScreen />
+      </SoundStateProvider>
+    </SettingsProvider>
   );
   await act(async () => {});
   return rendered;
@@ -42,6 +46,21 @@ async function renderScreen() {
 
 function reminder() {
   return screen.getByRole('switch');
+}
+
+/**
+ * The Settings screen, as far as this test is concerned: something else under the same
+ * provider that changes a setting Sleep is showing.
+ */
+function ChangeDefaultTimer() {
+  const { update } = useSettings();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="change the default timer"
+      onPress={() => update({ defaultTimerMinutes: 15 })}
+    />
+  );
 }
 
 beforeEach(() => {
@@ -67,12 +86,7 @@ describe('Sleep screen', () => {
     // "Wind-down at " with nothing after it, and a length that changed as the default
     // timer landed, are both worse than a card that appears a moment later.
     jest.mocked(settings.getSettings).mockReturnValue(new Promise(() => {}));
-    render(
-      <SoundStateProvider>
-        <SleepScreen />
-      </SoundStateProvider>
-    );
-    await act(async () => {});
+    await renderScreen();
 
     expect(screen.queryByTestId('tonight-card')).toBeNull();
     // The routine is static copy, so it is there from the first frame.
@@ -110,6 +124,33 @@ describe('Sleep screen', () => {
     jest.mocked(sessions.getLastSession).mockResolvedValue(lastSession);
     await renderScreen();
 
+    expect(screen.getByText('15 min · Evening Forest')).toBeTruthy();
+  });
+
+  it('takes the settings from the provider rather than reading them again', async () => {
+    // This screen is a tab, so it is mounted once and kept. Its own read would be the one
+    // it was still showing hours later. The second read here is `useReminder`, which keeps
+    // its own because it owns a two-way sync with the OS as well as the stored value.
+    await renderScreen();
+    expect(settings.getSettings).toHaveBeenCalledTimes(2);
+  });
+
+  it('follows a default timer changed elsewhere without waiting for a relaunch', async () => {
+    jest.mocked(sessions.getLastSession).mockResolvedValue(lastSession);
+    render(
+      <SettingsProvider>
+        <SoundStateProvider>
+          <SleepScreen />
+          <ChangeDefaultTimer />
+        </SoundStateProvider>
+      </SettingsProvider>
+    );
+    await act(async () => {});
+    expect(screen.getByText('45 min · Evening Forest')).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.press(screen.getByRole('button', { name: 'change the default timer' }));
+    });
     expect(screen.getByText('15 min · Evening Forest')).toBeTruthy();
   });
 
