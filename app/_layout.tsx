@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import { SettingsProvider } from '../context/SettingsContext';
 import { SoundStateProvider } from '../context/SoundStateContext';
 import { useAppScheme } from '../hooks/useAppScheme';
+import { useReminderTaps } from '../hooks/useReminderTaps';
 import { ThemeProvider } from '../theme/ThemeProvider';
 import { FONT_ASSETS } from '../theme/fonts';
 
@@ -42,6 +43,9 @@ export default function RootLayout() {
  */
 function App() {
   const scheme = useAppScheme();
+  // Above the navigator, so a reminder tapped from the lock screen has somewhere to go
+  // whichever screen the app was left on.
+  useReminderTaps();
 
   return (
     <ThemeProvider scheme={scheme}>
