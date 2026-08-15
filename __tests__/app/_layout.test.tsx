@@ -4,6 +4,7 @@ import { useColorScheme } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import RootLayout from '../../app/_layout';
+import { useReminderTaps } from '../../hooks/useReminderTaps';
 
 // This test lives outside `app/` on purpose. Expo Router turns every file under the
 // app directory into a route — its context filter only excludes `+api`, `+html`,
@@ -14,6 +15,11 @@ import RootLayout from '../../app/_layout';
 jest.mock('expo-font', () => ({ useFonts: jest.fn() }));
 
 jest.mock('react-native/Libraries/Utilities/useColorScheme');
+
+// Where a tapped reminder lands is its own hook's business, and it reaches for a navigator
+// this test does not stand up. Mocked, but still asserted on below — mounting it at the
+// root is the whole point of it being here.
+jest.mock('../../hooks/useReminderTaps', () => ({ useReminderTaps: jest.fn() }));
 
 // Both providers the layout wraps the navigator in read storage as they mount. Those reads
 // are not what these tests are about, so the providers are passthroughs — and the settings
@@ -141,6 +147,14 @@ describe('RootLayout', () => {
     fontState(true);
     render(<RootLayout />);
     expect(screen.getByTestId('status-bar').props.children).toBe('light');
+  });
+
+  it('listens for a tapped reminder above the navigator', () => {
+    // Below it, the tap would have nowhere to go until the user had already landed
+    // somewhere else.
+    fontState(true);
+    render(<RootLayout />);
+    expect(useReminderTaps).toHaveBeenCalled();
   });
 
   it('renders anyway when font loading fails', () => {

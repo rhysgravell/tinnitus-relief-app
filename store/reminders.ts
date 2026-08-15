@@ -27,6 +27,9 @@ type Reminder = {
   channelName: string;
   title: string;
   body: string;
+  /** The screen this one is asking for. Tapping it should arrive there, not at whatever
+   * screen the app happened to be left on. */
+  route: string;
 };
 
 const REMINDERS: Record<ReminderKind, Reminder> = {
@@ -35,12 +38,16 @@ const REMINDERS: Record<ReminderKind, Reminder> = {
     channelName: 'Wind-down',
     title: 'Time to wind down',
     body: 'Start your sound and let the evening settle.',
+    // Sleep rather than straight into a session: the routine is there, and so is the card
+    // to start tonight's sound from. Playing something unasked at 10pm would be a fright.
+    route: '/sleep',
   },
   checkIn: {
     id: 'check-in',
     channelName: 'Check-in',
     title: 'How was today?',
     body: 'Thirty seconds: how loud it was, and how you are.',
+    route: '/check-in',
   },
 };
 
@@ -86,6 +93,16 @@ export async function scheduleReminder(
   });
 
   return 'scheduled';
+}
+
+/**
+ * Where a tapped notification should land, found by the identifier it was scheduled under.
+ * Null for anything this app did not schedule, which is nothing today and might be a push
+ * message tomorrow.
+ */
+export function reminderDestination(identifier: string): string | null {
+  const reminder = Object.values(REMINDERS).find((entry) => entry.id === identifier);
+  return reminder?.route ?? null;
 }
 
 export async function cancelReminder(kind: ReminderKind): Promise<void> {

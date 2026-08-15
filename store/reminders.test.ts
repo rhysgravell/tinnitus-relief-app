@@ -6,7 +6,7 @@ import {
   scheduleNotificationAsync,
   setNotificationChannelAsync,
 } from 'expo-notifications';
-import { cancelReminder, scheduleReminder } from './reminders';
+import { cancelReminder, reminderDestination, scheduleReminder } from './reminders';
 
 jest.mock('expo-notifications', () => ({
   AndroidImportance: { DEFAULT: 3 },
@@ -168,5 +168,21 @@ describe('cancelReminder', () => {
   it('cancels the check-in reminder without touching the wind-down one', async () => {
     await cancelReminder('checkIn');
     expect(cancelScheduledNotificationAsync).toHaveBeenCalledWith('check-in');
+  });
+});
+
+describe('reminderDestination', () => {
+  it('sends the wind-down reminder to Sleep', () => {
+    // Not into a session: the routine is on Sleep, and so is the card to start tonight's
+    // sound from. Playing something unasked at 10pm would be a fright.
+    expect(reminderDestination('wind-down')).toBe('/sleep');
+  });
+
+  it('sends the check-in reminder to Check-in', () => {
+    expect(reminderDestination('check-in')).toBe('/check-in');
+  });
+
+  it('has nowhere to send a notification this app did not schedule', () => {
+    expect(reminderDestination('something-else')).toBeNull();
   });
 });
