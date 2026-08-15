@@ -1,13 +1,15 @@
-# Tinnitus Relief
+# Quiet
 
-A calming companion app for tinnitus relief, built with Expo and React Native.
+A calm companion for tinnitus, built with Expo and React Native. Not a medical device.
 
 ## Features
 
-- **Soundscapes** — a grid of ambient soundscapes (rain, fire, ocean, forest, and more) to play and mix into the background, with an optional sleep timer to auto-stop playback.
-- **Favourites** — quick access to your saved soundscapes.
-- **Sleep** — wind-down tips for the night, including a guided breathing exercise.
-- **Mood** — a simple emoji grid for tracking how you're feeling.
+- **Sounds** — ambient soundscapes to play against the ringing, with a timer that fades out rather than cutting off.
+- **Session** — the player itself: volume set just below the ringing, a countdown, and two slow breathing rings to follow.
+- **Saved** — the sounds that worked, kept one tap away.
+- **Sleep** — a wind-down routine for the night, a guided breathing exercise, and an optional reminder.
+- **Check-in** — thirty seconds a day on how loud it was and how you felt, charted over a fortnight, with a sentence that sets the nights you ran a session against the nights you did not.
+- **Settings** — timers, fade-out, reminders, and a dark palette that follows your phone.
 
 ## Tech stack
 
@@ -55,13 +57,19 @@ npm run web      # Web browser
 
 ```
 app/                  Screens and navigation (Expo Router)
-  (tabs)/             Tab screens: Soundscapes, Favourites, Sleep, Mood
+  (tabs)/             Tab screens: Sounds, Saved, Sleep, Check-in
 components/           Reusable UI components
-context/              React context providers (e.g. favourites)
-hooks/                Custom hooks (audio playback, timers, layout)
-store/                Static app data (soundscapes, moods, sleep tips)
-assets/               Icons, splash screens, and sound files
+context/              React context providers (settings, per-sound state)
+hooks/                Custom hooks (audio, timers, reminders, palette)
+store/                The catalogue and everything persisted (AsyncStorage)
+theme/                Design tokens and the palette provider
+utils/                Small pure helpers (time, duration, breathing)
+assets/               Icons, splash screens, artwork, and sound files
 ```
+
+Every colour, radius, font and spacing value comes from `theme/tokens.ts`; screens and
+components never hardcode one. Tests sit beside the code they cover, except for screens —
+Expo Router bundles everything under `app/`, so those live in `__tests__/app/`.
 
 ## Contributing
 

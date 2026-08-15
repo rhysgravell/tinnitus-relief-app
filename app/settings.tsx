@@ -23,8 +23,10 @@ import { formatTimeOfDay, spokenTimeOfDay } from '../utils/time';
 /** Which row is open. Only ever one, so the screen stays a screen and not a stack of pickers. */
 type OpenRow = 'timer' | 'windDown' | 'checkIn';
 
-/** The line at the foot of the screen. The app name is the design's, not the bundle's. */
-const APP_NAME = 'Quiet';
+/**
+ * The line at the foot of the screen. The disclaimer is not optional — an app about
+ * tinnitus must not read as a treatment claim.
+ */
 const DISCLAIMER = 'Not a medical device';
 
 /**
@@ -47,7 +49,9 @@ export default function SettingsRoute() {
   // Everything on this screen is read from the same stored settings, so it appears at once
   // rather than filling in row by row under the reader.
   const loaded = settings !== null && windDown.ready && checkIn.ready;
-  const version = Constants.expoConfig?.version;
+  // Both from the bundle, so the footer cannot claim a name or a version the build does
+  // not have. Either may be absent in a runtime that has no config to read.
+  const { name, version } = Constants.expoConfig ?? {};
 
   return (
     <SafeAreaView
@@ -146,7 +150,7 @@ export default function SettingsRoute() {
         ) : null}
 
         <Text variant="meta" tone="faint" style={styles.footer}>
-          {version ? `${APP_NAME} ${version} · ${DISCLAIMER}` : DISCLAIMER}
+          {name && version ? `${name} ${version} · ${DISCLAIMER}` : DISCLAIMER}
         </Text>
       </ScrollView>
     </SafeAreaView>

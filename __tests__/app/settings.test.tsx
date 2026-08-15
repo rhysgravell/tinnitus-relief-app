@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react-native';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import SettingsScreen from '../../app/settings';
 import { SettingsProvider } from '../../context/SettingsContext';
 import * as reminders from '../../store/reminders';
@@ -14,10 +15,11 @@ jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
 }));
 
-// The bundled app config is not read in a test run, so the version is stood in for here.
+// The bundled app config is not read in a test run, so it is stood in for here. The name
+// is the app's own, from app.json, rather than a string this screen keeps.
 jest.mock('expo-constants', () => ({
   __esModule: true,
-  default: { expoConfig: { version: '1.4.0' } },
+  default: { expoConfig: { name: 'Quiet', version: '1.4.0' } },
 }));
 
 const back = jest.fn();
@@ -112,6 +114,15 @@ describe('Settings screen', () => {
   it('names the build and says what the app is not', async () => {
     await renderScreen();
     expect(screen.getByText('Quiet 1.4.0 · Not a medical device')).toBeTruthy();
+  });
+
+  it('still says what the app is not where there is no config to read', async () => {
+    // The disclaimer is the part that is not optional, so it stands alone rather than
+    // going missing with the name and the version.
+    jest.replaceProperty(Constants, 'expoConfig', null);
+    await renderScreen();
+
+    expect(screen.getByText('Not a medical device')).toBeTruthy();
   });
 });
 
