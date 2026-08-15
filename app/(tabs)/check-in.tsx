@@ -32,7 +32,8 @@ import {
  */
 export default function CheckInScreen() {
   const { colors } = useTheme();
-  const { ready, entries, draft, status, setLoudness, setMood, save, refresh } = useCheckIn();
+  const { ready, entries, nights, draft, status, setLoudness, setMood, save, refresh } =
+    useCheckIn();
   const [wide, setWide] = useState(false);
 
   // The first read, and every one after it. A screen left open overnight is showing
@@ -96,7 +97,7 @@ export default function CheckInScreen() {
               // Set off from the chart, but needing no separation when there is no chart.
               style={logged.length > 0 ? styles.caption : null}
             >
-              {trendCaption(days)}
+              {trendCaption(days, nights)}
             </Text>
           ) : null}
         </View>

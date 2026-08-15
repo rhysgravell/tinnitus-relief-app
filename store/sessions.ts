@@ -1,15 +1,20 @@
-import { readJson, writeJson } from './storage';
+import { localDate } from './checkIns';
+import { readJson, removeKey, writeJson } from './storage';
+import { NIGHT_UNTIL_HOUR } from '../utils/time';
 
-const KEY = 'lastSession';
+const KEY = 'sessions';
+
+/** Where the single most recent session lived before there was a log of them. */
+const LEGACY_KEY = 'lastSession';
 
 /**
- * The most recently finished session, which powers the resume card at the top of Sounds.
- * Null means a first-run user with no history, and the card is omitted entirely.
+ * A finished session. The most recent one powers the resume card at the top of Sounds;
+ * the rest are what the check-in trend correlates loudness against.
  *
  * The in-flight session is deliberately not persisted — it is runtime state owned by the
  * Session screen, and a half-finished session should not survive a force quit.
  */
-export type LastSession = {
+export type Session = {
   soundId: string;
   /** ISO 8601. */
   endedAt: string;
@@ -19,10 +24,60 @@ export type LastSession = {
   timerMinutes: number | null;
 };
 
-export async function getLastSession(): Promise<LastSession | null> {
-  return readJson<LastSession | null>(KEY, null);
+/**
+ * How far back the log goes. The widest thing that reads it looks at 30 days, so this is
+ * already generous — and a log kept forever would grow without anything ever asking it to
+ * stop, on a phone, for a screen that only ever shows the last few weeks.
+ */
+const KEEP_DAYS = 90;
+
+/** Newest first, which is the order both readers of this want. */
+export async function getSessions(): Promise<Session[]> {
+  const stored = await readJson<Session[]>(KEY, []);
+  if (stored.length > 0) return sortedNewestFirst(stored);
+
+  // An empty log may mean a first-run user or a build from before the log existed. The
+  // absent legacy key is what tells the two apart, so it is dropped once carried over.
+  const legacy = await readJson<Session | null>(LEGACY_KEY, null);
+  if (!legacy) return [];
+
+  await writeJson(KEY, [legacy]);
+  await removeKey(LEGACY_KEY);
+  return [legacy];
 }
 
-export async function setLastSession(session: LastSession): Promise<void> {
-  await writeJson(KEY, session);
+export async function addSession(session: Session): Promise<void> {
+  const kept = (await getSessions()).filter((entry) => withinKeepWindow(entry, session.endedAt));
+  await writeJson(KEY, sortedNewestFirst([session, ...kept]));
+}
+
+/** The session behind the resume card, or null for someone who has not run one yet. */
+export async function getLastSession(): Promise<Session | null> {
+  return (await getSessions())[0] ?? null;
+}
+
+/**
+ * The nights a session ran on, as the date keys a check-in is filed under.
+ *
+ * A session that ended at 1am belongs to the night before — the same rule the resume
+ * card's wording uses — so it lines up with the check-in for the day it was really part of.
+ */
+export function sessionNights(sessions: Session[]): Set<string> {
+  return new Set(sessions.map(({ endedAt }) => nightOf(new Date(endedAt))));
+}
+
+function nightOf(when: Date): string {
+  const night = new Date(when);
+  if (night.getHours() < NIGHT_UNTIL_HOUR) night.setDate(night.getDate() - 1);
+  return localDate(night);
+}
+
+function sortedNewestFirst(sessions: Session[]): Session[] {
+  return [...sessions].sort((a, b) => b.endedAt.localeCompare(a.endedAt));
+}
+
+function withinKeepWindow({ endedAt }: Session, now: string): boolean {
+  const cutoff = new Date(now);
+  cutoff.setDate(cutoff.getDate() - KEEP_DAYS);
+  return new Date(endedAt).getTime() >= cutoff.getTime();
 }

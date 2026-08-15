@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { useFocusEffect } from 'expo-router';
 import { useLastSession } from './useLastSession';
 import * as sessions from '../store/sessions';
-import type { LastSession } from '../store/sessions';
+import type { Session } from '../store/sessions';
 
 /**
  * The real `useFocusEffect` needs a navigator. This stand-in runs the callback once, the
@@ -15,7 +15,7 @@ const mockUseFocusEffect = jest.mocked(useFocusEffect);
 type Cleanup = void | (() => void);
 let refocus: () => Cleanup = () => {};
 
-const session: LastSession = {
+const session: Session = {
   soundId: 'underwater',
   endedAt: '2026-08-08T22:30:00',
   durationMinutes: 42,
@@ -91,7 +91,7 @@ describe('useLastSession', () => {
 
   it('ignores a read that lands after the screen loses focus', async () => {
     // Otherwise a slow read would set state on an unfocused screen.
-    let settle: (value: LastSession | null) => void = () => {};
+    let settle: (value: Session | null) => void = () => {};
     jest
       .spyOn(sessions, 'getLastSession')
       .mockReturnValue(new Promise((resolve) => (settle = resolve)));

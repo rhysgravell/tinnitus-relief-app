@@ -2,7 +2,7 @@ import { DEFAULT_SOUND_STATE } from './soundState';
 import type { SoundState, SoundStates } from './soundState';
 import { tonightSound, tonightSummary } from './tonight';
 import { findSound } from './sounds';
-import type { LastSession } from './sessions';
+import type { Session } from './sessions';
 
 function saved(patch: Partial<SoundState> = {}): SoundState {
   return { ...DEFAULT_SOUND_STATE, saved: true, ...patch };
@@ -12,7 +12,7 @@ function states(entries: Record<string, Partial<SoundState>>): SoundStates {
   return Object.fromEntries(Object.entries(entries).map(([id, patch]) => [id, saved(patch)]));
 }
 
-function session(soundId: string): LastSession {
+function session(soundId: string): Session {
   return { soundId, endedAt: new Date().toISOString(), durationMinutes: 30, timerMinutes: 45 };
 }
 

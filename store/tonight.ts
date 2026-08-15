@@ -1,7 +1,7 @@
 import { savedSounds } from './saved';
 import { SOUNDS, findSound, isPlayable } from './sounds';
 import type { Sound } from './sounds';
-import type { LastSession } from './sessions';
+import type { Session } from './sessions';
 import type { SoundStates } from './soundState';
 
 /**
@@ -12,7 +12,7 @@ import type { SoundStates } from './soundState';
  * reach for most, then simply the first thing that will play. Each fallback is a step
  * further from what they have told us and closer to a guess, but none of them is nothing.
  */
-export function tonightSound(session: LastSession | null, states: SoundStates): Sound | undefined {
+export function tonightSound(session: Session | null, states: SoundStates): Sound | undefined {
   const last = session ? findSound(session.soundId) : undefined;
   if (last && isPlayable(last)) return last;
 

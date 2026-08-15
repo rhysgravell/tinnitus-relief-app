@@ -7,6 +7,7 @@ import {
   saveCheckIn,
   today,
 } from '../store/checkIns';
+import { getSessions, sessionNights } from '../store/sessions';
 import type { CheckIn, CheckInDraft, DraftStatus, Loudness, Mood } from '../store/checkIns';
 
 export type UseCheckIn = {
@@ -14,6 +15,8 @@ export type UseCheckIn = {
   ready: boolean;
   /** Every check-in, oldest first — what the trend is drawn from. */
   entries: CheckIn[];
+  /** The nights a session ran on, which is what the trend's sentence is written against. */
+  nights: ReadonlySet<string>;
   draft: CheckInDraft;
   status: DraftStatus;
   setLoudness: (value: Loudness) => void;
@@ -31,6 +34,9 @@ type Answer = { day: string | null; draft: CheckInDraft };
 
 const NO_ANSWER: Answer = { day: null, draft: EMPTY_DRAFT };
 
+/** Nothing read yet, and nothing to correlate against — the caption falls back on its own. */
+const EMPTY_NIGHTS: ReadonlySet<string> = new Set();
+
 /**
  * Today's check-in and the history behind it.
  *
@@ -43,12 +49,16 @@ const NO_ANSWER: Answer = { day: null, draft: EMPTY_DRAFT };
  */
 export function useCheckIn(): UseCheckIn {
   const [entries, setEntries] = useState<CheckIn[] | null>(null);
+  const [nights, setNights] = useState<ReadonlySet<string>>(EMPTY_NIGHTS);
   const [answer, setAnswer] = useState<Answer>(NO_ANSWER);
 
   const refresh = useCallback(async () => {
     const date = today();
-    const stored = await getCheckIns();
+    // Both at once: the sentence under the chart is written from the two together, and
+    // reading them one after the other would put it on screen twice.
+    const [stored, sessions] = await Promise.all([getCheckIns(), getSessions()]);
     setEntries(stored);
+    setNights(sessionNights(sessions));
 
     // An answer half-given is left alone on the way back to the screen, but not carried
     // across midnight: it was about yesterday.
@@ -84,6 +94,7 @@ export function useCheckIn(): UseCheckIn {
   return {
     ready: entries !== null,
     entries: list,
+    nights,
     draft,
     status: draftStatus(draft, stored),
     setLoudness,

@@ -1,11 +1,11 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import { getLastSession } from '../store/sessions';
-import type { LastSession } from '../store/sessions';
+import type { Session } from '../store/sessions';
 
 type Result = {
   /** Null for a first-run user, which is why the resume card is hidden rather than empty. */
-  session: LastSession | null;
+  session: Session | null;
   /** False until the first read lands, so the card can appear rather than pop in empty. */
   loaded: boolean;
 };
@@ -16,7 +16,7 @@ type Result = {
  * top of this one — Sounds is never unmounted in between.
  */
 export function useLastSession(): Result {
-  const [session, setSession] = useState<LastSession | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useFocusEffect(

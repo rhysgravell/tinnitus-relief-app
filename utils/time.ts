@@ -60,8 +60,11 @@ export function spokenTimeOfDay({ hour, minute }: TimeOfDay): string {
     : `${onTheClock}:${String(minute).padStart(2, '0')} ${period}`;
 }
 
-/** Sessions before this hour belong to the night before, as far as the wording goes. */
-const NIGHT_UNTIL = 5;
+/**
+ * Sessions before this hour belong to the night before — for the wording here, and for
+ * the night a session is filed under in `store/sessions.ts`.
+ */
+export const NIGHT_UNTIL_HOUR = 5;
 
 /**
  * How the resume card refers to when the last session ran: "Last night", "Yesterday",
@@ -72,7 +75,7 @@ export function relativeDayLabel(when: Date, now: Date): string {
 
   if (days <= 0) {
     // Something that finished at 1am today is colloquially last night, not this morning.
-    return when.getHours() < NIGHT_UNTIL ? 'Last night' : 'Earlier today';
+    return when.getHours() < NIGHT_UNTIL_HOUR ? 'Last night' : 'Earlier today';
   }
 
   if (days === 1) {

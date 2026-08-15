@@ -6,7 +6,7 @@ import { SoundStateProvider } from '../../context/SoundStateContext';
 import * as sessions from '../../store/sessions';
 import * as soundState from '../../store/soundState';
 import { SOUNDS } from '../../store/sounds';
-import type { LastSession } from '../../store/sessions';
+import type { Session } from '../../store/sessions';
 
 // This test lives outside `app/` on purpose — Expo Router bundles every file under the app
 // directory as a route. See the guard in ./routes.test.ts.
@@ -32,7 +32,7 @@ function lastNight(): string {
   return when.toISOString();
 }
 
-const lastSession: LastSession = {
+const lastSession: Session = {
   soundId: 'underwater',
   endedAt: lastNight(),
   durationMinutes: 42,
