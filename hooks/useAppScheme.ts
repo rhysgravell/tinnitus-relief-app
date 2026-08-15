@@ -1,16 +1,20 @@
-import { useEffect, useReducer } from 'react';
-import { AppState } from 'react-native';
+import { useColorScheme } from 'react-native';
 import { useSettings } from '../context/SettingsContext';
 import { DEFAULT_SETTINGS } from '../store/settings';
-import { isDarkHour, msUntilNextDarkChange } from '../utils/darkHours';
 import type { Scheme } from '../theme/tokens';
 
 /**
- * The palette the app is wearing: dark through the evening and the night if "Dark after
- * sunset" is on, light otherwise.
+ * The palette the app is wearing: the night one whenever the phone itself has gone dark
+ * and "Dark after sunset" is on, the day one otherwise.
  *
- * This is the app-wide scheme only. Session and Sleep are night surfaces whatever the
- * hour, and provide their own dark palette over this one.
+ * The phone is the clock here. Both iOS and Android can switch themselves at sunset, and
+ * they know when that is because they know where they are — which this app does not, and
+ * would have to ask for a location permission to find out, on behalf of a colour. A phone
+ * left on light all day never dims this app either, which is the trade: the setting says
+ * dark when you want dark, and the phone is where that is already decided.
+ *
+ * This is the app-wide scheme only. Session and Sleep are night surfaces at any hour and
+ * provide their own dark palette over this one.
  */
 export function useAppScheme(): Scheme {
   const { settings } = useSettings();
@@ -18,26 +22,7 @@ export function useAppScheme(): Scheme {
   // which is on — because opening light and turning dark a moment later is a flash of
   // white at exactly the hour this setting exists to avoid.
   const enabled = settings?.darkAfterSunset ?? DEFAULT_SETTINGS.darkAfterSunset;
+  const phone = useColorScheme();
 
-  const [generation, recheck] = useReducer((count: number) => count + 1, 0);
-
-  useEffect(() => {
-    if (!enabled) return;
-
-    // One timer, set for the boundary itself, rather than a clock ticking all evening.
-    const timer = setTimeout(recheck, msUntilNextDarkChange(new Date()));
-    // Timers do not fire reliably while the app is in the background, and a phone picked
-    // up at 2am was very likely put down before dark.
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') recheck();
-    });
-
-    return () => {
-      clearTimeout(timer);
-      subscription.remove();
-    };
-    // `generation` re-arms the timer for the next boundary once this one has passed.
-  }, [enabled, generation]);
-
-  return enabled && isDarkHour(new Date()) ? 'dark' : 'light';
+  return enabled && phone === 'dark' ? 'dark' : 'light';
 }

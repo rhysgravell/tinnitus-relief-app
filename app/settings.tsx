@@ -113,7 +113,8 @@ export default function SettingsRoute() {
             <Group label="Night">
               <SettingsRow
                 title="Dark after sunset"
-                description="The app dims itself when you'd want it to"
+                // The phone is what actually decides, so the line says where to set it.
+                description="Follows your phone, which can switch itself at sunset"
                 control={
                   <Toggle
                     value={settings.darkAfterSunset}

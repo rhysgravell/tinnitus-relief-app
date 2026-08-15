@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { BreathingRings } from '../components/BreathingRings';
 import { SavedStar } from '../components/SavedStar';
 import { ScreenBackground } from '../components/ScreenBackground';
+import { ScreenStatusBar } from '../components/ScreenStatusBar';
 import { SectionLabel } from '../components/SectionLabel';
 import { Text } from '../components/Text';
 import { TimerRow } from '../components/TimerRow';
@@ -42,6 +43,8 @@ export default function SessionRoute() {
   // own provider rather than reading the root one.
   return (
     <ThemeProvider scheme="dark">
+      {/* And the status bar with it, for as long as the session is the screen in front. */}
+      <ScreenStatusBar />
       <Session />
     </ThemeProvider>
   );
