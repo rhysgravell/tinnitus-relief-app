@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -10,14 +10,13 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenStatusBar } from '../../components/ScreenStatusBar';
 import { SectionLabel } from '../../components/SectionLabel';
 import { TonightCard } from '../../components/TonightCard';
+import { useSettings } from '../../context/SettingsContext';
 import { useSoundStates } from '../../context/SoundStateContext';
 import { useLastSession } from '../../hooks/useLastSession';
 import { useReminder } from '../../hooks/useReminder';
 import { ThemeProvider } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
 import { ROUTINE } from '../../store/routine';
-import { getSettings } from '../../store/settings';
-import type { Settings } from '../../store/settings';
 import { tonightSound, tonightSummary } from '../../store/tonight';
 import { formatTimeOfDay } from '../../utils/time';
 
@@ -41,19 +40,12 @@ function Sleep() {
   const { states } = useSoundStates();
   const { session } = useLastSession();
   const windDown = useReminder('windDown');
+  // From the provider rather than a read of its own: this is a tab, so it stays mounted,
+  // and a default timer changed in Settings has to reach the card rather than wait for a
+  // relaunch.
+  const { settings } = useSettings();
 
-  const [settings, setSettings] = useState<Settings | null>(null);
   const [breathing, setBreathing] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    getSettings().then((stored) => {
-      if (active) setSettings(stored);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
 
   const sound = tonightSound(session, states);
   /**

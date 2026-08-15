@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import { createAudioPlayer } from 'expo-audio';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import SessionRoute from '../../app/session';
+import { SettingsProvider } from '../../context/SettingsContext';
 import { SoundStateProvider } from '../../context/SoundStateContext';
 import * as sessions from '../../store/sessions';
 import * as settings from '../../store/settings';
@@ -44,9 +45,11 @@ const MINUTE = 60 * 1000;
 async function renderSession(soundId = 'underwater') {
   jest.mocked(useLocalSearchParams).mockReturnValue({ soundId });
   const rendered = render(
-    <SoundStateProvider>
-      <SessionRoute />
-    </SoundStateProvider>
+    <SettingsProvider>
+      <SoundStateProvider>
+        <SessionRoute />
+      </SoundStateProvider>
+    </SettingsProvider>
   );
   await act(async () => {});
   return rendered;
@@ -254,6 +257,12 @@ describe('Session screen', () => {
     expect(sessions.addSession).toHaveBeenCalledWith(
       expect.objectContaining({ soundId: 'underwater', durationMinutes: 20, timerMinutes: 45 })
     );
+  });
+
+  it('takes the settings from the provider rather than reading them again', async () => {
+    // Three of the five are this screen's to honour, and the app already has them read.
+    await renderSession();
+    expect(settings.getSettings).toHaveBeenCalledTimes(1);
   });
 
   it('remembers a session that was swiped away as well as one that was closed', async () => {

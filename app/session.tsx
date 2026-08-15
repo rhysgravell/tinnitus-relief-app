@@ -11,6 +11,7 @@ import { Text } from '../components/Text';
 import { TimerRow } from '../components/TimerRow';
 import { TransportButton } from '../components/TransportButton';
 import { VolumeSlider } from '../components/VolumeSlider';
+import { useSettings } from '../context/SettingsContext';
 import { useSoundStates } from '../context/SoundStateContext';
 import { useSessionAudio } from '../hooks/useSessionAudio';
 import { useCountdownClock } from '../hooks/useCountdownClock';
@@ -18,8 +19,7 @@ import { useSessionSetup } from '../hooks/useSessionSetup';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
 import { addSession } from '../store/sessions';
-import { DEFAULT_SETTINGS, getSettings } from '../store/settings';
-import type { Settings } from '../store/settings';
+import { DEFAULT_SETTINGS } from '../store/settings';
 import { recordSession } from '../store/soundState';
 import { findSound, isPlayable } from '../store/sounds';
 import { formatClock, wholeMinutes } from '../utils/duration';
@@ -62,17 +62,7 @@ function Session() {
 
   const [playing, setPlaying] = useState(true);
   /** Null until the read lands. Three of the five settings are this screen's to honour. */
-  const [settings, setSettings] = useState<Settings | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    getSettings().then((stored) => {
-      if (active) setSettings(stored);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { settings } = useSettings();
 
   const {
     volume,
