@@ -16,7 +16,11 @@ const LEGACY_KEY = 'lastSession';
  */
 export type Session = {
   soundId: string;
-  /** ISO 8601. */
+  /**
+   * ISO 8601, and the moment the sound stopped rather than the moment the screen was
+   * closed — the two can be a night apart, and it is the first that says which night this
+   * belongs to.
+   */
   endedAt: string;
   /** How long it actually ran, which is what the resume card reports. */
   durationMinutes: number;
