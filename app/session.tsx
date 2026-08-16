@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text as RNText, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -72,11 +72,16 @@ function Session() {
     ready: seeded,
   } = useSessionSetup(sound?.id, settings);
 
+  /**
+   * Whether the sound is actually going. Held until the remembered setup lands, so the
+   * clock and the sound start together. Held for a sound with no recording too, which is
+   * also what keeps it out of the history: the guard below reads a clock that never left
+   * zero.
+   */
+  const running = playing && seeded && playable;
+
   const { elapsedSeconds, remainingSeconds, restart } = useCountdownClock({
-    // Held until the remembered setup lands, so the clock and the sound start together.
-    // Held for a sound with no recording too, which is also what keeps it out of the
-    // history: the guard below reads a clock that never left zero.
-    running: playing && seeded && playable,
+    running,
     timerMinutes,
     // Stopping rather than dismissing: whoever set a timer is probably asleep, and a
     // screen that vanished on its own would leave them with no idea what happened.
@@ -92,37 +97,74 @@ function Session() {
     mixWithOthers: settings?.mixWithOthers ?? DEFAULT_SETTINGS.mixWithOthers,
   });
 
+  /** The clock reading already written to the log, so one stretch is only recorded once. */
+  const recordedAtRef = useRef<number | null>(null);
+
   const toggleTransport = () => {
     // Play after the timer has run out starts another stretch of the same length rather
     // than resuming a session with nothing left on it — which would be silent, since the
     // fade has already taken the volume to zero.
-    if (!playing && remainingSeconds === 0) restart();
+    if (!playing && remainingSeconds === 0) {
+      restart();
+      // The stretch that just ended is already in the log; what follows is its own entry,
+      // even if it runs to exactly the same length.
+      recordedAtRef.current = null;
+    }
     setPlaying((current) => !current);
   };
 
-  /** The values as they stood at the end, read by the unmount effect below. */
+  /** The values as they stood at the end. Declared first so the effects below read them. */
   const finalRef = useRef({ elapsedSeconds, volume, timerMinutes });
   useEffect(() => {
     finalRef.current = { elapsedSeconds, volume, timerMinutes };
   }, [elapsedSeconds, volume, timerMinutes]);
 
+  /**
+   * When the sound stopped, or null while it is still going.
+   *
+   * A timer that runs out at eleven and a sheet swiped away the next morning are eight
+   * hours apart, and it is the first of the two the session happened at. Dating it from
+   * the second would file it under the following night — so the check-in it belongs
+   * beside would not see it — and have the resume card call it "Earlier today".
+   */
+  const stoppedAtRef = useRef<number | null>(null);
   useEffect(() => {
-    const id = sound?.id;
-    if (!id) return;
-    // Recorded on the way out rather than from a close handler: this screen is a sheet, so
-    // it can be swiped away, and unmounting is the only thing that always happens.
+    if (!running) return;
+    stoppedAtRef.current = null;
     return () => {
-      const final = finalRef.current;
-      if (final.elapsedSeconds < MINIMUM_RECORDED_SECONDS) return;
-      void recordSession(id, { volume: final.volume, timerMinutes: final.timerMinutes });
-      void addSession({
-        soundId: id,
-        endedAt: new Date().toISOString(),
-        durationMinutes: wholeMinutes(final.elapsedSeconds),
-        timerMinutes: final.timerMinutes,
-      });
+      stoppedAtRef.current = Date.now();
     };
+  }, [running]);
+
+  const remember = useCallback(() => {
+    const id = sound?.id;
+    const { elapsedSeconds: elapsed, volume: level, timerMinutes: timer } = finalRef.current;
+    if (!id || elapsed < MINIMUM_RECORDED_SECONDS || elapsed === recordedAtRef.current) return;
+
+    recordedAtRef.current = elapsed;
+    void recordSession(id, { volume: level, timerMinutes: timer });
+    void addSession({
+      soundId: id,
+      endedAt: new Date(stoppedAtRef.current ?? Date.now()).toISOString(),
+      durationMinutes: wholeMinutes(elapsed),
+      timerMinutes: timer,
+    });
   }, [sound?.id]);
+
+  useEffect(() => {
+    // A timer running out is the end of the session, so it goes in the log then and there.
+    // Waiting for the sheet to be closed would lose the whole night if the system reclaimed
+    // an app that had been playing in the background since eleven.
+    if (remainingSeconds !== 0) return;
+    remember();
+  }, [remainingSeconds, remember]);
+
+  useEffect(() => {
+    // And on the way out, which is the only ending a session with no timer has. This screen
+    // is a sheet, so it can be swiped away rather than closed — unmounting is the one thing
+    // that always happens.
+    return () => remember();
+  }, [remember]);
 
   return (
     <ScreenBackground>

@@ -265,6 +265,68 @@ describe('Session screen', () => {
     expect(settings.getSettings).toHaveBeenCalledTimes(1);
   });
 
+  it('remembers a session the moment its timer runs out', async () => {
+    // Not when the sheet is finally closed: the phone spends the rest of the night in a
+    // pocket or on a bedside table, and a backgrounded app can be reclaimed before anyone
+    // touches it again.
+    await renderSession();
+    advance(45 * MINUTE);
+
+    expect(sessions.addSession).toHaveBeenCalledWith(
+      expect.objectContaining({ soundId: 'underwater', durationMinutes: 45, timerMinutes: 45 })
+    );
+  });
+
+  it('dates a session from when the sound stopped, not from when the sheet was closed', async () => {
+    // The overnight case: a timer that ran out at 23:15 and a screen dismissed at 07:30.
+    // Recording the second would file the session under the following night.
+    jest.setSystemTime(new Date('2026-08-15T22:30:00'));
+    await renderSession();
+    advance(45 * MINUTE);
+
+    advance(8 * 60 * MINUTE);
+    screen.unmount();
+
+    expect(sessions.addSession).toHaveBeenCalledTimes(1);
+    const { endedAt } = jest.mocked(sessions.addSession).mock.calls[0][0];
+    expect(new Date(endedAt).getHours()).toBe(23);
+  });
+
+  it('dates a paused session from the pause, not from the eventual close', async () => {
+    // The same rule as the timer, for the session someone stops themselves and then falls
+    // asleep in front of.
+    jest.setSystemTime(new Date('2026-08-15T22:30:00'));
+    await renderSession();
+    advance(20 * MINUTE);
+    fireEvent.press(transport());
+
+    advance(8 * 60 * MINUTE);
+    screen.unmount();
+
+    const { endedAt } = jest.mocked(sessions.addSession).mock.calls[0][0];
+    expect(new Date(endedAt).getHours()).toBe(22);
+  });
+
+  it('records one stretch once, however long the screen is left open afterwards', async () => {
+    await renderSession();
+    advance(45 * MINUTE);
+    advance(20 * MINUTE);
+    screen.unmount();
+
+    expect(sessions.addSession).toHaveBeenCalledTimes(1);
+    expect(soundState.recordSession).toHaveBeenCalledTimes(1);
+  });
+
+  it('records a second stretch started after the timer ran out', async () => {
+    // Same sound, same length, so it is only the restart that says this is a new session.
+    await renderSession();
+    advance(45 * MINUTE);
+    fireEvent.press(transport());
+    advance(45 * MINUTE);
+
+    expect(sessions.addSession).toHaveBeenCalledTimes(2);
+  });
+
   it('remembers a session that was swiped away as well as one that was closed', async () => {
     // The screen is a sheet, so there is no close handler to hang this off.
     await renderSession();
