@@ -21,11 +21,18 @@ jest.mock('react-native/Libraries/Utilities/useColorScheme');
 // root is the whole point of it being here.
 jest.mock('../../hooks/useReminderTaps', () => ({ useReminderTaps: jest.fn() }));
 
-// Both providers the layout wraps the navigator in read storage as they mount. Those reads
+// The providers the layout wraps the navigator in read storage as they mount. Those reads
 // are not what these tests are about, so the providers are passthroughs — and the settings
 // one hands back the defaults, which is what the app runs on before its read lands anyway.
 jest.mock('../../context/SoundStateContext', () => ({
   SoundStateProvider: function SoundStateProvider({ children }: { children?: ReactNode }) {
+    return children;
+  },
+}));
+
+// This one also reaches for the native audio module, which is not in a test runtime at all.
+jest.mock('../../context/PlaybackContext', () => ({
+  PlaybackProvider: function PlaybackProvider({ children }: { children?: ReactNode }) {
     return children;
   },
 }));

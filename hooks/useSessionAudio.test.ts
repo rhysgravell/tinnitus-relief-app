@@ -157,6 +157,13 @@ describe('useSessionAudio', () => {
     );
   });
 
+  it('claims no audio session while there is nothing to play', () => {
+    // This runs for the whole life of the app, not just while a session is open. Setting
+    // the mode at launch would duck whatever the phone was already playing.
+    setup({ source: null });
+    expect(setAudioModeAsync).not.toHaveBeenCalled();
+  });
+
   it('survives an audio mode that the platform rejects', () => {
     jest.mocked(setAudioModeAsync).mockRejectedValue(new Error('no session'));
     const { result } = setup();

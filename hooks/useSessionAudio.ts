@@ -54,6 +54,11 @@ export function useSessionAudio({
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // Only once there is something to play. This hook now lives above the navigator, for
+    // the whole life of the app, and claiming the audio session at launch would interrupt
+    // whatever the phone was already playing before the user had asked for anything.
+    if (source === null) return;
+
     // A masking sound is useless if it stops when the screen locks, and useless on a phone
     // left on silent overnight.
     setAudioModeAsync({
@@ -63,7 +68,7 @@ export function useSessionAudio({
     }).catch(() => {
       // Playback still works with the default mode; it just may not survive a lock.
     });
-  }, [mixWithOthers]);
+  }, [mixWithOthers, source]);
 
   useEffect(() => {
     if (source === null) return;

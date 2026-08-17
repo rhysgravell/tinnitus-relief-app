@@ -1,7 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { Text } from 'react-native';
 import { createAudioPlayer } from 'expo-audio';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import SessionRoute from '../../app/session';
+import { PlaybackProvider, usePlayback } from '../../context/PlaybackContext';
 import { SettingsProvider } from '../../context/SettingsContext';
 import { SoundStateProvider } from '../../context/SoundStateContext';
 import * as sessions from '../../store/sessions';
@@ -41,18 +43,44 @@ let player: Player;
 
 const MINUTE = 60 * 1000;
 
-/** The provider and the settings read both land on mount; flushing them starts playback. */
-async function renderSession(soundId = 'underwater') {
-  jest.mocked(useLocalSearchParams).mockReturnValue({ soundId });
-  const rendered = render(
+/**
+ * What is playing, once the session screen itself has gone. Playback belongs to the app
+ * rather than to the screen, so leaving the screen is not the same as stopping the sound.
+ */
+function Probe() {
+  const { sound, playing } = usePlayback();
+  return (
+    <Text testID="probe">{sound ? `${sound.id} ${playing ? 'playing' : 'paused'}` : 'nothing'}</Text>
+  );
+}
+
+/** The app around the session, with the session itself able to come and go. */
+function App({ sessionOpen }: { sessionOpen: boolean }) {
+  return (
     <SettingsProvider>
       <SoundStateProvider>
-        <SessionRoute />
+        <PlaybackProvider>{sessionOpen ? <SessionRoute /> : <Probe />}</PlaybackProvider>
       </SoundStateProvider>
     </SettingsProvider>
   );
+}
+
+/** The providers and the settings read all land on mount; flushing them starts playback. */
+async function renderSession(soundId = 'underwater') {
+  jest.mocked(useLocalSearchParams).mockReturnValue({ soundId });
+  const rendered = render(<App sessionOpen />);
   await act(async () => {});
   return rendered;
+}
+
+/** Navigates away from the session, leaving the app it was presented over standing. */
+function leaveSession(rendered: ReturnType<typeof render>) {
+  act(() => rendered.rerender(<App sessionOpen={false} />));
+}
+
+/** Comes back to the session, as Sleep's "Start now" and the resume card both do. */
+function returnToSession(rendered: ReturnType<typeof render>) {
+  act(() => rendered.rerender(<App sessionOpen />));
 }
 
 /** The interval the clock refreshes on. */
@@ -241,6 +269,53 @@ describe('Session screen', () => {
     await renderSession();
     fireEvent.press(screen.getByRole('button', { name: 'Wind down for the night' }));
     expect(dismissTo).toHaveBeenCalledWith('/sleep');
+  });
+
+  it('keeps the sound going once the moon has handed the night over', async () => {
+    // The wind-down routine's third step promises the sound is still playing underneath
+    // the breathing exercise. It only is if the sound outlives this screen.
+    const rendered = await renderSession();
+    advance(10 * MINUTE);
+    fireEvent.press(screen.getByRole('button', { name: 'Wind down for the night' }));
+    leaveSession(rendered);
+
+    expect(screen.getByTestId('probe').props.children).toBe('underwater playing');
+    expect(player.remove).not.toHaveBeenCalled();
+  });
+
+  it('stops the sound when the session is left any other way', async () => {
+    // The chevron and a swipe down both mean "done". Nothing outside the session offers a
+    // way back to a sound still playing, so one left running would be the worse mistake.
+    const rendered = await renderSession();
+    advance(10 * MINUTE);
+    leaveSession(rendered);
+
+    expect(screen.getByTestId('probe').props.children).toBe('nothing');
+    expect(player.remove).toHaveBeenCalled();
+  });
+
+  it('comes back to a handed-over session rather than starting it again', async () => {
+    const rendered = await renderSession();
+    advance(10 * MINUTE);
+    fireEvent.press(screen.getByRole('button', { name: 'Wind down for the night' }));
+    leaveSession(rendered);
+    returnToSession(rendered);
+
+    expect(screen.getByText('10:00')).toBeTruthy();
+    expect(createAudioPlayer).toHaveBeenCalledTimes(1);
+  });
+
+  it('logs a handed-over session when its timer runs out, not when the screen went', async () => {
+    const rendered = await renderSession();
+    advance(10 * MINUTE);
+    fireEvent.press(screen.getByRole('button', { name: 'Wind down for the night' }));
+    leaveSession(rendered);
+    expect(sessions.addSession).not.toHaveBeenCalled();
+
+    advance(35 * MINUTE);
+    expect(sessions.addSession).toHaveBeenCalledWith(
+      expect.objectContaining({ soundId: 'underwater', durationMinutes: 45 })
+    );
   });
 
   it('remembers the session on the way out', async () => {
