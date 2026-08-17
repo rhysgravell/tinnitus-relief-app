@@ -3,6 +3,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
+import { PlaybackProvider } from '../context/PlaybackContext';
 import { SettingsProvider } from '../context/SettingsContext';
 import { SoundStateProvider } from '../context/SoundStateContext';
 import { useAppScheme } from '../hooks/useAppScheme';
@@ -55,13 +56,20 @@ function App() {
       {/* Above the navigator, not inside the tabs: Session is presented from this stack, and
           it reads and writes the same per-sound state the tab screens do. */}
       <SoundStateProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          {/* A sheet rather than a full-screen cover: the design dismisses the session with
-              a swipe down as well as the chevron, and iOS only offers that on a sheet. */}
-          <Stack.Screen name="session" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="settings" />
-        </Stack>
+        {/* Outside the navigator, because the sound has to outlive the screen that starts
+            it: the moon on the session hands the night over to Sleep, whose routine reads
+            "with your sound still playing underneath". Inside the sound state provider,
+            whose remembered volume and timer are what a session opens at. */}
+        <PlaybackProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            {/* A sheet rather than a full-screen cover: the design dismisses the session
+                with a swipe down as well as the chevron, and iOS only offers that on a
+                sheet. */}
+            <Stack.Screen name="session" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="settings" />
+          </Stack>
+        </PlaybackProvider>
       </SoundStateProvider>
     </ThemeProvider>
   );
