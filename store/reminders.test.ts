@@ -1,17 +1,20 @@
 import { Platform } from 'react-native';
 import {
   cancelScheduledNotificationAsync,
+  getAllScheduledNotificationsAsync,
   getPermissionsAsync,
   requestPermissionsAsync,
   scheduleNotificationAsync,
   setNotificationChannelAsync,
 } from 'expo-notifications';
-import { cancelReminder, reminderDestination, scheduleReminder } from './reminders';
+import { cancelReminder, reminderDestination, reminderState, scheduleReminder } from './reminders';
+import type { NotificationRequest } from 'expo-notifications';
 
 jest.mock('expo-notifications', () => ({
   AndroidImportance: { DEFAULT: 3 },
   SchedulableTriggerInputTypes: { DAILY: 'daily' },
   cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
+  getAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve([])),
   getPermissionsAsync: jest.fn(),
   requestPermissionsAsync: jest.fn(),
   scheduleNotificationAsync: jest.fn(() => Promise.resolve('wind-down')),
@@ -184,5 +187,48 @@ describe('reminderDestination', () => {
 
   it('has nowhere to send a notification this app did not schedule', () => {
     expect(reminderDestination('something-else')).toBeNull();
+  });
+});
+
+describe('reminderState', () => {
+  /** What the OS says it is holding, of which only the identifier is read. */
+  function onTheSchedule(...identifiers: string[]) {
+    jest
+      .mocked(getAllScheduledNotificationsAsync)
+      .mockResolvedValue(identifiers.map((identifier) => ({ identifier }) as NotificationRequest));
+  }
+
+  it('reports a reminder the OS is still holding', async () => {
+    alreadyAllowed();
+    onTheSchedule('wind-down');
+    expect(await reminderState('windDown')).toBe('scheduled');
+  });
+
+  it('tells the two reminders apart', async () => {
+    // They are held in one list, so a check that only counted entries would call the
+    // check-in reminder scheduled because the wind-down one is.
+    alreadyAllowed();
+    onTheSchedule('wind-down');
+    expect(await reminderState('checkIn')).toBe('missing');
+  });
+
+  it('reports a schedule that is no longer there', async () => {
+    alreadyAllowed();
+    onTheSchedule();
+    expect(await reminderState('windDown')).toBe('missing');
+  });
+
+  it('reports notifications having been turned off for the app', async () => {
+    jest.mocked(getPermissionsAsync).mockResolvedValue(permission(false));
+    onTheSchedule('wind-down');
+    expect(await reminderState('windDown')).toBe('denied');
+  });
+
+  it('never prompts for permission it was only asked to read', async () => {
+    // This runs without the user asking for anything. A system prompt out of nowhere is
+    // exactly what scheduling is careful to avoid.
+    jest.mocked(getPermissionsAsync).mockResolvedValue(permission(false));
+    await reminderState('windDown');
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
   });
 });

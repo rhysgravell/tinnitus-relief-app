@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { cancelReminder, scheduleReminder } from '../store/reminders';
+import { AppState } from 'react-native';
+import { cancelReminder, reminderState, scheduleReminder } from '../store/reminders';
 import { getSettings, reminderPatch, reminderSetting, updateSettings } from '../store/settings';
 import type { ReminderKind } from '../store/reminders';
+import type { ReminderSetting } from '../store/settings';
 import type { TimeOfDay } from '../utils/time';
 
 export type Reminder = {
@@ -28,15 +30,47 @@ export type Reminder = {
  * One of the daily reminders: the stored setting, and the OS-level schedule that has to
  * agree with it.
  *
- * The two can disagree in one direction only — permission refused — and this hook resolves
- * that by trusting the OS and putting the setting back, so what is stored is always what
- * will actually happen.
+ * The two can disagree in one direction only — the OS will not deliver what was stored —
+ * and this hook resolves that by trusting the OS and putting the setting back, so what is
+ * stored is always what will actually happen.
  */
 export function useReminder(kind: ReminderKind): Reminder {
   const [enabled, setEnabled] = useState(false);
   const [at, setAt] = useState<TimeOfDay | null>(null);
   const [ready, setReady] = useState(false);
   const [denied, setDenied] = useState(false);
+
+  /**
+   * Brings the switch into line with what the OS is actually going to do.
+   *
+   * A reminder is stored as on when it is scheduled and then never asked about again. But
+   * notifications can be switched off for the app afterwards, in the phone's settings,
+   * where nothing tells this app it happened — and a schedule does not always survive a
+   * restore onto a new phone. Either way the row would sit there promising a nudge that is
+   * never coming, which is worse than a switch that is honestly off.
+   */
+  const reconcile = useCallback(
+    async (target: ReminderSetting) => {
+      // Nothing to check: an off reminder is not going to arrive, which is what it says.
+      if (!target.enabled) return;
+
+      const state = await reminderState(kind);
+      if (state === 'scheduled') return;
+
+      if (state === 'missing') {
+        // Permission is intact, so this is a schedule that went astray rather than a
+        // decision anyone made. Put it back rather than report the reminder off.
+        const outcome = await scheduleReminder(kind, target.at);
+        if (outcome === 'scheduled') return;
+      }
+
+      setEnabled(false);
+      setDenied(true);
+      // Stored as off, because off is what it is.
+      await updateSettings(reminderPatch(kind, { ...target, enabled: false }));
+    },
+    [kind]
+  );
 
   useEffect(() => {
     let active = true;
@@ -46,11 +80,23 @@ export function useReminder(kind: ReminderKind): Reminder {
       setEnabled(stored.enabled);
       setAt(stored.at);
       setReady(true);
+      void reconcile(stored);
     });
     return () => {
       active = false;
     };
-  }, [kind]);
+  }, [kind, reconcile]);
+
+  useEffect(() => {
+    // Turning notifications off means leaving this app for the phone's settings and coming
+    // back, so the way back in is the moment to ask again. Sleep is a tab and stays mounted
+    // for the life of the app, so a check on mount alone would be a check once a launch.
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || at === null) return;
+      void reconcile({ enabled, at });
+    });
+    return () => subscription.remove();
+  }, [at, enabled, reconcile]);
 
   const apply = useCallback(
     (on: boolean, time: TimeOfDay | null) => {
