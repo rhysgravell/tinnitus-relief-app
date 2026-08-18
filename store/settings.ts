@@ -1,4 +1,4 @@
-import { readJson, writeJson } from './storage';
+import { readJson, updateJson } from './storage';
 import { formatTimeOfDay, parseTimeOfDay } from '../utils/time';
 import type { ReminderKind } from './reminders';
 import type { TimeOfDay } from '../utils/time';
@@ -131,8 +131,16 @@ export async function getSettings(): Promise<Settings> {
   return { ...DEFAULT_SETTINGS, ...stored };
 }
 
+/**
+ * Applies a patch to the stored settings.
+ *
+ * Queued rather than read-then-written: both reminders can correct themselves at the same
+ * instant on the way back into the app, and each writes the whole object.
+ */
 export async function updateSettings(patch: Partial<Settings>): Promise<Settings> {
-  const next = { ...(await getSettings()), ...patch };
-  await writeJson(KEY, next);
-  return next;
+  return updateJson<Partial<Settings>, Settings>(KEY, {}, (stored) => ({
+    ...DEFAULT_SETTINGS,
+    ...stored,
+    ...patch,
+  }));
 }

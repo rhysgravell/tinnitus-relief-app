@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { readJson, removeKey, writeJson } from './storage';
+import { readJson, removeKey, updateJson, writeJson } from './storage';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -42,5 +42,61 @@ describe('removeKey', () => {
 
   it('says nothing about a key that was never there', async () => {
     await expect(removeKey('missing')).resolves.toBeUndefined();
+  });
+});
+
+describe('updateJson', () => {
+  it('gives the caller back what it wrote', async () => {
+    await writeJson('key', { a: 1 });
+    const next = await updateJson<{ a: number }>('key', { a: 0 }, (current) => ({ a: current.a + 1 }));
+
+    expect(next).toEqual({ a: 2 });
+    expect(await readJson('key', null)).toEqual({ a: 2 });
+  });
+
+  it('starts from the fallback when nothing is stored', async () => {
+    expect(await updateJson<number>('key', 7, (n) => n + 1)).toBe(8);
+  });
+
+  it('runs one update at a time on a key', async () => {
+    // The point of the whole thing. Overlapping, all three would read 0 and all three
+    // would write 1 — which is a star tapped after another one going missing.
+    await Promise.all([
+      updateJson<number>('count', 0, (n) => n + 1),
+      updateJson<number>('count', 0, (n) => n + 1),
+      updateJson<number>('count', 0, (n) => n + 1),
+    ]);
+
+    expect(await readJson('count', 0)).toBe(3);
+  });
+
+  it('keeps separate keys separate', async () => {
+    await Promise.all([
+      updateJson<number>('a', 0, (n) => n + 1),
+      updateJson<number>('b', 0, (n) => n + 10),
+    ]);
+
+    expect(await readJson('a', 0)).toBe(1);
+    expect(await readJson('b', 0)).toBe(10);
+  });
+
+  it('hands a failure to the caller', async () => {
+    await expect(
+      updateJson<number>('key', 0, () => {
+        throw new Error('nothing to write');
+      })
+    ).rejects.toThrow('nothing to write');
+  });
+
+  it('does not wedge a key behind an update that failed', async () => {
+    // Every later change to the key would otherwise be dropped behind the broken one.
+    await expect(
+      updateJson<number>('key', 0, () => {
+        throw new Error('nothing to write');
+      })
+    ).rejects.toThrow();
+
+    await updateJson<number>('key', 0, (n) => n + 1);
+    expect(await readJson('key', 0)).toBe(1);
   });
 });

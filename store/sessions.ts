@@ -1,5 +1,5 @@
 import { localDate } from './checkIns';
-import { readJson, removeKey, writeJson } from './storage';
+import { readJson, removeKey, updateJson, writeJson } from './storage';
 import { NIGHT_UNTIL_HOUR } from '../utils/time';
 
 const KEY = 'sessions';
@@ -37,22 +37,38 @@ const KEEP_DAYS = 90;
 
 /** Newest first, which is the order both readers of this want. */
 export async function getSessions(): Promise<Session[]> {
-  const stored = await readJson<Session[]>(KEY, []);
-  if (stored.length > 0) return sortedNewestFirst(stored);
+  await carryOverLegacy();
+  return sortedNewestFirst(await readJson<Session[]>(KEY, []));
+}
 
-  // An empty log may mean a first-run user or a build from before the log existed. The
-  // absent legacy key is what tells the two apart, so it is dropped once carried over.
+/**
+ * Moves the one session the app used to keep into the log.
+ *
+ * An empty log may mean a first-run user or a build from before the log existed. The absent
+ * legacy key is what tells the two apart, so it is dropped once carried over — which also
+ * makes this do nothing on every launch after the first.
+ */
+async function carryOverLegacy(): Promise<void> {
+  if ((await readJson<Session[]>(KEY, [])).length > 0) return;
+
   const legacy = await readJson<Session | null>(LEGACY_KEY, null);
-  if (!legacy) return [];
+  if (!legacy) return;
 
   await writeJson(KEY, [legacy]);
   await removeKey(LEGACY_KEY);
-  return [legacy];
 }
 
 export async function addSession(session: Session): Promise<void> {
-  const kept = (await getSessions()).filter((entry) => withinKeepWindow(entry, session.endedAt));
-  await writeJson(KEY, sortedNewestFirst([session, ...kept]));
+  // Carried over first, outside the update: it writes the same key, and doing it from
+  // inside would be a write nested in a write.
+  await carryOverLegacy();
+
+  await updateJson<Session[]>(KEY, [], (stored) =>
+    sortedNewestFirst([
+      session,
+      ...stored.filter((entry) => withinKeepWindow(entry, session.endedAt)),
+    ])
+  );
 }
 
 /** The session behind the resume card, or null for someone who has not run one yet. */

@@ -134,3 +134,31 @@ describe('migrating the old favourites', () => {
     expect(await getSavedIds()).toEqual([]);
   });
 });
+
+describe('two changes landing together', () => {
+  it('does not lose a star tapped a moment after another', async () => {
+    // The Sounds grid puts five stars within a thumb's reach of each other.
+    await Promise.all([toggleSaved('underwater'), toggleSaved('at-the-beach')]);
+
+    expect((await getSavedIds()).sort()).toEqual(['at-the-beach', 'underwater']);
+  });
+
+  it('counts two sessions as two', async () => {
+    await Promise.all([
+      recordSession('underwater', { volume: 0.5, timerMinutes: 30 }),
+      recordSession('underwater', { volume: 0.5, timerMinutes: 30 }),
+    ]);
+
+    expect((await getSoundState('underwater')).sessionCount).toBe(2);
+  });
+
+  it('keeps a star saved through a session being recorded against another sound', async () => {
+    await Promise.all([
+      toggleSaved('underwater'),
+      recordSession('at-the-beach', { volume: 0.4, timerMinutes: 45 }),
+    ]);
+
+    expect((await getSoundState('underwater')).saved).toBe(true);
+    expect((await getSoundState('at-the-beach')).sessionCount).toBe(1);
+  });
+});

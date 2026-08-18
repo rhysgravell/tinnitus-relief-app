@@ -1,4 +1,4 @@
-import { readJson, removeKey, writeJson } from './storage';
+import { readJson, removeKey, updateJson } from './storage';
 import { findSound } from './sounds';
 
 const KEY = 'soundState';
@@ -38,20 +38,23 @@ export async function getSoundState(id: string): Promise<SoundState> {
   return states[id] ?? DEFAULT_SOUND_STATE;
 }
 
-async function update(id: string, patch: Partial<SoundState>): Promise<SoundStates> {
-  const states = await getSoundStates();
-  const next: SoundStates = {
-    ...states,
-    [id]: { ...DEFAULT_SOUND_STATE, ...states[id], ...patch },
-  };
-  await writeJson(KEY, next);
-  return next;
+/**
+ * Changes one sound's state, queued behind any other change to the same key.
+ *
+ * The old state is read inside the update rather than passed in, because that read is half
+ * of what has to be atomic: two stars tapped a moment apart both read the same copy, and
+ * the second write would drop the first one's star.
+ */
+function change(id: string, next: (current: SoundState) => Partial<SoundState>) {
+  return updateJson<SoundStates>(KEY, {}, (states) => {
+    const current = { ...DEFAULT_SOUND_STATE, ...states[id] };
+    return { ...states, [id]: { ...current, ...next(current) } };
+  });
 }
 
 export async function toggleSaved(id: string): Promise<boolean> {
-  const { saved } = await getSoundState(id);
-  await update(id, { saved: !saved });
-  return !saved;
+  const states = await change(id, ({ saved }) => ({ saved: !saved }));
+  return states[id].saved;
 }
 
 export async function getSavedIds(): Promise<string[]> {
@@ -72,16 +75,16 @@ export async function migrateFavourites(): Promise<void> {
   const favourites = await readJson<unknown>(LEGACY_FAVOURITES_KEY, null);
   if (!Array.isArray(favourites)) return;
 
-  const states = await getSoundStates();
-  const migrated: SoundStates = { ...states };
-  for (const id of favourites) {
-    // A sound the old build shipped may have left the catalogue since, and saving state
-    // against an id nothing can show would strand it.
-    if (typeof id !== 'string' || !findSound(id)) continue;
-    migrated[id] = { ...DEFAULT_SOUND_STATE, ...migrated[id], saved: true };
-  }
-
-  await writeJson(KEY, migrated);
+  await updateJson<SoundStates>(KEY, {}, (states) => {
+    const migrated: SoundStates = { ...states };
+    for (const id of favourites) {
+      // A sound the old build shipped may have left the catalogue since, and saving state
+      // against an id nothing can show would strand it.
+      if (typeof id !== 'string' || !findSound(id)) continue;
+      migrated[id] = { ...DEFAULT_SOUND_STATE, ...migrated[id], saved: true };
+    }
+    return migrated;
+  });
   await removeKey(LEGACY_FAVOURITES_KEY);
 }
 
@@ -93,11 +96,12 @@ export async function recordSession(
   id: string,
   settings: { volume: number; timerMinutes: number | null }
 ): Promise<SoundState> {
-  const { sessionCount } = await getSoundState(id);
-  const next = await update(id, {
+  const states = await change(id, ({ sessionCount }) => ({
     lastVolume: settings.volume,
     lastTimerMinutes: settings.timerMinutes,
+    // Counted off the stored value inside the update, so two sessions landing together
+    // count two rather than both counting the same one.
     sessionCount: sessionCount + 1,
-  });
-  return next[id];
+  }));
+  return states[id];
 }
