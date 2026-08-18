@@ -79,6 +79,9 @@ beforeEach(() => {
   jest.spyOn(soundState, 'migrateFavourites').mockResolvedValue(undefined);
   jest.spyOn(reminders, 'scheduleReminder').mockResolvedValue('scheduled');
   jest.spyOn(reminders, 'cancelReminder').mockResolvedValue(undefined);
+  // The hook checks a stored-on reminder against the OS as it mounts. That check is its
+  // own test's business; here it agrees, so these screens see what they were given.
+  jest.spyOn(reminders, 'reminderState').mockResolvedValue('scheduled');
 });
 
 describe('Sleep screen', () => {

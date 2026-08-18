@@ -1,4 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react-native';
+import { AppState } from 'react-native';
+import type { AppStateStatus } from 'react-native';
 import { useReminder } from './useReminder';
 import * as reminders from '../store/reminders';
 import * as settings from '../store/settings';
@@ -10,6 +12,18 @@ function stored(patch: Partial<settings.Settings> = {}) {
   jest.spyOn(settings, 'getSettings').mockResolvedValue({ ...DEFAULT_SETTINGS, ...patch });
 }
 
+/** The app-state listeners the hook has registered, in place of the real subscription. */
+let listeners: ((state: AppStateStatus) => void)[] = [];
+
+/** The app being opened back up, which is when a revoked permission is discovered. */
+function foreground() {
+  listeners.forEach((listener) => listener('active'));
+}
+
+function background() {
+  listeners.forEach((listener) => listener('background'));
+}
+
 async function setup(kind: ReminderKind = 'windDown') {
   const rendered = renderHook(() => useReminder(kind));
   await waitFor(() => expect(rendered.result.current.ready).toBe(true));
@@ -18,9 +32,25 @@ async function setup(kind: ReminderKind = 'windDown') {
 
 beforeEach(() => {
   jest.restoreAllMocks();
+
+  listeners = [];
+  // Removal is real rather than a no-op, so an effect that re-subscribes does not leave a
+  // stale listener behind to answer for a state the hook has moved on from.
+  jest.spyOn(AppState, 'addEventListener').mockImplementation((_event, handler) => {
+    const listener = handler as (state: AppStateStatus) => void;
+    listeners.push(listener);
+    return {
+      remove: () => {
+        listeners = listeners.filter((entry) => entry !== listener);
+      },
+    } as unknown as ReturnType<typeof AppState.addEventListener>;
+  });
+
   jest.spyOn(settings, 'updateSettings').mockResolvedValue(DEFAULT_SETTINGS);
   jest.spyOn(reminders, 'scheduleReminder').mockResolvedValue('scheduled');
   jest.spyOn(reminders, 'cancelReminder').mockResolvedValue(undefined);
+  // The OS agrees with what was stored unless a test says otherwise.
+  jest.spyOn(reminders, 'reminderState').mockResolvedValue('scheduled');
   stored();
 });
 
@@ -202,5 +232,88 @@ describe('choosing a time', () => {
       checkInEnabled: false,
       checkInTime: '19:00',
     });
+  });
+});
+
+describe('checking what the OS will actually do', () => {
+  it('asks nothing of the OS for a reminder that is off', async () => {
+    await setup();
+    expect(reminders.reminderState).not.toHaveBeenCalled();
+  });
+
+  it('leaves a reminder that is genuinely scheduled alone', async () => {
+    stored({ windDownEnabled: true });
+    const { result } = await setup();
+
+    expect(result.current.enabled).toBe(true);
+    expect(result.current.denied).toBe(false);
+    expect(reminders.scheduleReminder).not.toHaveBeenCalled();
+  });
+
+  it('puts the switch back when notifications have been turned off since', async () => {
+    // In the phone's own settings, where nothing tells this app it happened. The row would
+    // otherwise promise a nudge at 22:30 that is never coming.
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('denied');
+    stored({ windDownEnabled: true, windDownTime: '22:30' });
+    const { result } = await setup();
+
+    await waitFor(() => expect(result.current.enabled).toBe(false));
+    expect(result.current.denied).toBe(true);
+    expect(settings.updateSettings).toHaveBeenCalledWith({
+      windDownEnabled: false,
+      windDownTime: '22:30',
+    });
+  });
+
+  it('quietly puts back a schedule that went astray', async () => {
+    // Permission is intact and only the schedule is gone — a restore onto a new phone.
+    // Nobody decided to turn this off, so it goes back rather than being reported off.
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('missing');
+    stored({ checkInEnabled: true, checkInTime: '21:00' });
+    const { result } = await setup('checkIn');
+
+    await waitFor(() =>
+      expect(reminders.scheduleReminder).toHaveBeenCalledWith('checkIn', { hour: 21, minute: 0 })
+    );
+    expect(result.current.enabled).toBe(true);
+    expect(result.current.denied).toBe(false);
+  });
+
+  it('gives up honestly when the reschedule is refused too', async () => {
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('missing');
+    jest.spyOn(reminders, 'scheduleReminder').mockResolvedValue('denied');
+    stored({ windDownEnabled: true });
+    const { result } = await setup();
+
+    await waitFor(() => expect(result.current.denied).toBe(true));
+    expect(result.current.enabled).toBe(false);
+  });
+
+  it('asks again every time the app is opened back up', async () => {
+    // Sleep is a tab and stays mounted for the life of the app, so a check on mount alone
+    // would be a check once a launch — and permission is revoked while the app is away.
+    stored({ windDownEnabled: true });
+    const { result } = await setup();
+    expect(reminders.reminderState).toHaveBeenCalledTimes(1);
+
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('denied');
+    await act(async () => {
+      foreground();
+    });
+
+    expect(result.current.enabled).toBe(false);
+    expect(result.current.denied).toBe(true);
+  });
+
+  it('ignores the app going away rather than coming back', async () => {
+    stored({ windDownEnabled: true });
+    await setup();
+    jest.mocked(reminders.reminderState).mockClear();
+
+    await act(async () => {
+      background();
+    });
+
+    expect(reminders.reminderState).not.toHaveBeenCalled();
   });
 });

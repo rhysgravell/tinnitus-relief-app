@@ -3,6 +3,7 @@ import {
   AndroidImportance,
   SchedulableTriggerInputTypes,
   cancelScheduledNotificationAsync,
+  getAllScheduledNotificationsAsync,
   getPermissionsAsync,
   requestPermissionsAsync,
   scheduleNotificationAsync,
@@ -93,6 +94,31 @@ export async function scheduleReminder(
   });
 
   return 'scheduled';
+}
+
+/**
+ * Whether a reminder the app believes is on will actually arrive.
+ *
+ * `denied` is notifications switched off for the app since it was scheduled, which happens
+ * in the phone's own settings where this app never sees it. `missing` is permission intact
+ * but nothing on the schedule — what a restored backup or cleared app data looks like.
+ */
+export type ReminderState = 'scheduled' | 'denied' | 'missing';
+
+/**
+ * Asks the OS what it is actually going to do, rather than trusting what was stored when
+ * the switch was last touched.
+ *
+ * Permission is read, never requested: this runs without the user having asked for
+ * anything, and a prompt out of nowhere is exactly what `scheduleReminder` avoids.
+ */
+export async function reminderState(kind: ReminderKind): Promise<ReminderState> {
+  if (!(await getPermissionsAsync()).granted) return 'denied';
+
+  const scheduled = await getAllScheduledNotificationsAsync();
+  return scheduled.some(({ identifier }) => identifier === REMINDERS[kind].id)
+    ? 'scheduled'
+    : 'missing';
 }
 
 /**
