@@ -1,4 +1,4 @@
-import { readJson, writeJson } from './storage';
+import { readJson, updateJson } from './storage';
 
 const KEY = 'checkIns';
 
@@ -56,10 +56,11 @@ export async function getCheckIns(): Promise<CheckIn[]> {
 
 /** Replaces the entry for that date, so checking in twice corrects rather than duplicates. */
 export async function saveCheckIn(entry: CheckIn): Promise<CheckIn[]> {
-  const others = (await getCheckIns()).filter((c) => c.date !== entry.date);
-  const next = [...others, entry].sort((a, b) => a.date.localeCompare(b.date));
-  await writeJson(KEY, next);
-  return next;
+  return updateJson<CheckIn[]>(KEY, [], (stored) =>
+    [...stored.filter((c) => c.date !== entry.date), entry].sort((a, b) =>
+      a.date.localeCompare(b.date)
+    )
+  );
 }
 
 /** What the screen has collected so far. Either answer can still be missing. */

@@ -37,8 +37,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   /** To be called once `settings` has arrived — which is when a row exists to call it. */
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => (current ? { ...current, ...patch } : current));
-    // The write reads storage back first, so a patch cannot clobber a setting this screen
-    // is not showing.
+    // Not awaited, and it does not need to be: the store queues its writes, so a patch sent
+    // while another is still landing reads what that one left rather than clobbering it.
     void updateSettings(patch);
   }, []);
 

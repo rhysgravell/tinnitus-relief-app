@@ -165,3 +165,26 @@ describe('the reminder times on offer', () => {
     }
   });
 });
+
+describe('two changes landing together', () => {
+  it('keeps both, rather than letting the later write drop the earlier one', async () => {
+    // Both reminders can correct themselves at the same instant on the way back into the
+    // app, and each write covers the whole settings object.
+    await Promise.all([
+      updateSettings({ windDownEnabled: false, windDownTime: '22:30' }),
+      updateSettings({ checkInEnabled: false, checkInTime: '21:00' }),
+    ]);
+
+    const stored = await getSettings();
+    expect(stored.windDownTime).toBe('22:30');
+    expect(stored.checkInTime).toBe('21:00');
+  });
+
+  it('keeps a switch flipped while another one is still being written', async () => {
+    await Promise.all([updateSettings({ fadeOut: false }), updateSettings({ mixWithOthers: true })]);
+
+    const stored = await getSettings();
+    expect(stored.fadeOut).toBe(false);
+    expect(stored.mixWithOthers).toBe(true);
+  });
+});

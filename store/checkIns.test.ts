@@ -116,3 +116,14 @@ describe('draft status', () => {
     expect(saveLabel('saved')).toBe('Saved');
   });
 });
+
+describe('two check-ins landing together', () => {
+  it('keeps both days', async () => {
+    await Promise.all([
+      saveCheckIn({ date: '2026-08-17', loudness: 2, mood: 'calm' }),
+      saveCheckIn({ date: '2026-08-18', loudness: 4, mood: 'tired' }),
+    ]);
+
+    expect((await getCheckIns()).map(({ date }) => date)).toEqual(['2026-08-17', '2026-08-18']);
+  });
+});

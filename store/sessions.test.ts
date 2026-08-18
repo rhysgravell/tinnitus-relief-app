@@ -119,3 +119,27 @@ describe('the nights sessions ran on', () => {
     expect(nights).toEqual(new Set(['2026-08-14']));
   });
 });
+
+describe('two sessions landing together', () => {
+  it('logs both', async () => {
+    await Promise.all([
+      addSession({
+        soundId: 'underwater',
+        endedAt: '2026-08-17T23:10:00.000Z',
+        durationMinutes: 30,
+        timerMinutes: 30,
+      }),
+      addSession({
+        soundId: 'at-the-beach',
+        endedAt: '2026-08-18T23:40:00.000Z',
+        durationMinutes: 45,
+        timerMinutes: 45,
+      }),
+    ]);
+
+    expect((await getSessions()).map(({ soundId }) => soundId)).toEqual([
+      'at-the-beach',
+      'underwater',
+    ]);
+  });
+});
