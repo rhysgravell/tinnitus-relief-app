@@ -47,8 +47,11 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let active = true;
     // Favourites from before the redesign are folded in first, so a returning user's
-    // saved list is already correct by the time anything reads it.
+    // saved list is already correct by the time anything reads it. Allowed to fail: it
+    // writes, and a provider that never became ready would leave Saved empty and every
+    // star on Sounds hollow. The old key survives a failure, so the next launch retries.
     migrateFavourites()
+      .catch(() => {})
       .then(() => getSoundStates())
       .then((stored) => {
         if (!active) return;
@@ -78,6 +81,9 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
     writing.current += 1;
     try {
       await persistSaved(id);
+    } catch {
+      // The star has already moved, and there is nothing useful to tell someone at 3am
+      // about a write that did not land. It goes back on the next read, which is honest.
     } finally {
       writing.current -= 1;
     }

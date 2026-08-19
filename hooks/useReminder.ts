@@ -34,6 +34,16 @@ export type Reminder = {
  * and this hook resolves that by trusting the OS and putting the setting back, so what is
  * stored is always what will actually happen.
  */
+/**
+ * Swallows a failure from the OS or from storage.
+ *
+ * Everything below runs off a tap that has already moved the switch, or off no tap at all,
+ * so there is nobody to tell. Leaving the switch where it is beats correcting it on the
+ * strength of a question that did not get answered — and if a schedule really did not land,
+ * the check on the way back into the app is what finds it.
+ */
+function ignoreFailure() {}
+
 export function useReminder(kind: ReminderKind): Reminder {
   const [enabled, setEnabled] = useState(false);
   const [at, setAt] = useState<TimeOfDay | null>(null);
@@ -80,7 +90,7 @@ export function useReminder(kind: ReminderKind): Reminder {
       setEnabled(stored.enabled);
       setAt(stored.at);
       setReady(true);
-      void reconcile(stored);
+      void reconcile(stored).catch(ignoreFailure);
     });
     return () => {
       active = false;
@@ -93,7 +103,7 @@ export function useReminder(kind: ReminderKind): Reminder {
     // for the life of the app, so a check on mount alone would be a check once a launch.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active' || at === null) return;
-      void reconcile({ enabled, at });
+      void reconcile({ enabled, at }).catch(ignoreFailure);
     });
     return () => subscription.remove();
   }, [at, enabled, reconcile]);
@@ -126,7 +136,7 @@ export function useReminder(kind: ReminderKind): Reminder {
           return;
         }
         await updateSettings(reminderPatch(kind, target));
-      })();
+      })().catch(ignoreFailure);
     },
     [kind]
   );

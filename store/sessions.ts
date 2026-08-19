@@ -37,7 +37,13 @@ const KEEP_DAYS = 90;
 
 /** Newest first, which is the order both readers of this want. */
 export async function getSessions(): Promise<Session[]> {
-  await carryOverLegacy();
+  // Swallowed on purpose: the carry-over writes, and a write can fail. Reading the log is
+  // what the resume card and the whole Check-in screen wait on, and neither of them has
+  // anything to show if this rejects — a failed migration would blank them rather than
+  // cost them one old session. The legacy key is still there, so the next launch tries
+  // again.
+  await carryOverLegacy().catch(() => {});
+
   return sortedNewestFirst(await readJson<Session[]>(KEY, []));
 }
 
