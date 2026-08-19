@@ -15,6 +15,8 @@ function endedAt(year: number, month: number, day: number, hour: number, minute 
 }
 
 beforeEach(async () => {
+  // Restored as well as cleared: the failure tests below spy on the storage itself.
+  jest.restoreAllMocks();
   await AsyncStorage.clear();
 });
 
@@ -141,5 +143,24 @@ describe('two sessions landing together', () => {
       'at-the-beach',
       'underwater',
     ]);
+  });
+});
+
+describe('when a write fails', () => {
+  it('still reads the log when the old key cannot be carried over', async () => {
+    // The carry-over writes, and the resume card and the whole Check-in screen wait on this
+    // read. Failing it would blank both of them over one old session.
+    await AsyncStorage.setItem('lastSession', JSON.stringify(session));
+    jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('disk full'));
+
+    await expect(getSessions()).resolves.toEqual([]);
+  });
+
+  it('carries the old key over on the next go instead', async () => {
+    await AsyncStorage.setItem('lastSession', JSON.stringify(session));
+    jest.spyOn(AsyncStorage, 'setItem').mockRejectedValueOnce(new Error('disk full'));
+    await getSessions();
+
+    expect(await getSessions()).toEqual([session]);
   });
 });

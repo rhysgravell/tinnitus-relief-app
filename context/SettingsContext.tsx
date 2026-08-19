@@ -38,8 +38,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const update = useCallback((patch: Partial<Settings>) => {
     setSettings((current) => (current ? { ...current, ...patch } : current));
     // Not awaited, and it does not need to be: the store queues its writes, so a patch sent
-    // while another is still landing reads what that one left rather than clobbering it.
-    void updateSettings(patch);
+    // while another is still landing reads what that one left rather than clobbering it. A
+    // write that fails leaves the switch where the user put it until the next launch, which
+    // is a better answer than an error about a preference.
+    void updateSettings(patch).catch(() => {});
   }, []);
 
   const value = useMemo<SettingsContextValue>(() => ({ settings, update }), [settings, update]);

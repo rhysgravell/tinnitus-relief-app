@@ -12,6 +12,13 @@ import type { Sound } from '../store/sounds';
 import { wholeMinutes } from '../utils/duration';
 
 /**
+ * Swallows a failed write. Both of these run as the sound is let go, with nothing on screen
+ * left to tell, and one entry missing from the log is a smaller loss than a rejection
+ * nobody is listening for.
+ */
+function ignoreFailure() {}
+
+/**
  * Below this, nothing is recorded. Opening a session and closing it again is not a
  * session, and remembering it would push a real one off the resume card.
  */
@@ -169,13 +176,13 @@ function LoadedSound({ soundId, open, stop, children }: LoadedProps) {
     if (!id || elapsed < MINIMUM_RECORDED_SECONDS || elapsed === recordedAtRef.current) return;
 
     recordedAtRef.current = elapsed;
-    void recordSession(id, { volume: level, timerMinutes: timer });
+    void recordSession(id, { volume: level, timerMinutes: timer }).catch(ignoreFailure);
     void addSession({
       soundId: id,
       endedAt: new Date(stoppedAtRef.current ?? Date.now()).toISOString(),
       durationMinutes: wholeMinutes(elapsed),
       timerMinutes: timer,
-    });
+    }).catch(ignoreFailure);
   }, [sound?.id]);
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import { Pressable, Text } from 'react-native';
 import { SoundStateProvider, useSoundStates } from './SoundStateContext';
 import * as store from '../store/soundState';
@@ -167,6 +167,45 @@ describe('SoundStateProvider', () => {
     await waitFor(() => expect(value('ready')).toBe('true'));
 
     expect(order).toEqual(['migrate', 'read']);
+  });
+
+  it('opens anyway when the old favourites cannot be carried over', async () => {
+    // The migration writes, and a write can fail. A provider that never became ready would
+    // leave Saved blank and every star on Sounds hollow, for the sake of one lost carry-over
+    // the next launch will retry.
+    jest.spyOn(store, 'migrateFavourites').mockRejectedValue(new Error('disk full'));
+    jest.spyOn(store, 'getSoundStates').mockResolvedValue({
+      underwater: { ...store.DEFAULT_SOUND_STATE, saved: true },
+    });
+
+    render(
+      <SoundStateProvider>
+        <Probe />
+      </SoundStateProvider>
+    );
+
+    await waitFor(() => expect(value('ready')).toBe('true'));
+    expect(value('saved')).toBe('true');
+  });
+
+  it('keeps the star where the tap put it when the write fails', async () => {
+    // There is nothing useful to tell someone at 3am about a write that did not land, and
+    // an error thrown out of the tap handler would be a rejection nobody is listening for.
+    jest.spyOn(store, 'getSoundStates').mockResolvedValue({});
+    jest.spyOn(store, 'toggleSaved').mockRejectedValue(new Error('disk full'));
+
+    render(
+      <SoundStateProvider>
+        <Probe />
+      </SoundStateProvider>
+    );
+    await waitFor(() => expect(value('ready')).toBe('true'));
+
+    await act(async () => {
+      fireEvent.press(screen.getByTestId('toggle'));
+    });
+
+    expect(value('saved')).toBe('true');
   });
 
   it('toggles back off again', async () => {

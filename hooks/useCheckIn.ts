@@ -85,7 +85,12 @@ export function useCheckIn(): UseCheckIn {
     // midnight, and the entry belongs to the date it is being written on.
     const date = today();
     setAnswer({ day: date, draft });
-    void saveCheckIn({ date, loudness: draft.loudness, mood: draft.mood }).then(setEntries);
+    // The button reads its own state off `entries`, so a write that never lands leaves it
+    // saying "Save today" rather than claiming the day is logged. Nothing more to do here
+    // than keep the failure from surfacing as a rejection nobody is listening for.
+    void saveCheckIn({ date, loudness: draft.loudness, mood: draft.mood })
+      .then(setEntries)
+      .catch(() => {});
   }, [draft]);
 
   const list = entries ?? [];
