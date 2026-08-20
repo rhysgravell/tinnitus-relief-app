@@ -19,6 +19,19 @@ describe('app config', () => {
     expect(expo.name).toBe('Quiet');
   });
 
+  it('is identified by the name it actually ships under', () => {
+    // The app was renamed to Quiet in #34 and this was left reading tinnitusreliefapp,
+    // which is the mistake worth guarding: the identifier is the one piece of a rename
+    // that nothing on screen would have shown was still wrong.
+    expect(expo.ios.bundleIdentifier).toBe(`com.rhysgravell.${expo.slug}`);
+  });
+
+  it('is the same app on both stores', () => {
+    // Two identifiers that drifted apart would be two apps, and nothing in a build would
+    // say so — each platform reads only its own.
+    expect(expo.android.package).toBe(expo.ios.bundleIdentifier);
+  });
+
   it('lets the system decide the appearance', () => {
     // Not a style preference: pinning this to light or dark pins what `useColorScheme`
     // answers with, and "Dark after sunset" is that answer. The app would be stuck in one

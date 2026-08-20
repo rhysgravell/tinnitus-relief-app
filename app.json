@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.rhysgravell.tinnitusreliefapp"
+      "bundleIdentifier": "com.rhysgravell.quiet"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +24,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.rhysgravell.tinnitusreliefapp"
+      "package": "com.rhysgravell.quiet"
     },
     "web": {
       "favicon": "./assets/favicon.png"
