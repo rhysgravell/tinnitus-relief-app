@@ -1,6 +1,7 @@
 import {
   formatTimeOfDay,
   greetingFor,
+  msUntilGreetingChanges,
   parseTimeOfDay,
   relativeDayLabel,
   spokenTimeOfDay,
@@ -32,6 +33,42 @@ describe('greetingFor', () => {
     // The design reads "Good evening, Rhys", but nothing in the app collects a name — the
     // onboarding screen that would is deferred — so the greeting stands alone.
     expect(greetingFor(at('2026-08-09T20:00:00'))).not.toContain(',');
+  });
+});
+
+describe('msUntilGreetingChanges', () => {
+  const MINUTE = 60 * 1000;
+  const HOUR = 60 * MINUTE;
+
+  it('counts the morning down to noon', () => {
+    expect(msUntilGreetingChanges(at('2026-08-09T09:30:00'))).toBe(2.5 * HOUR);
+  });
+
+  it('counts the afternoon down to six', () => {
+    expect(msUntilGreetingChanges(at('2026-08-09T17:45:00'))).toBe(15 * MINUTE);
+  });
+
+  it('counts the evening down to midnight, where morning starts again', () => {
+    expect(msUntilGreetingChanges(at('2026-08-09T22:30:00'))).toBe(1.5 * HOUR);
+  });
+
+  it('lands on the hour the greeting actually changes', () => {
+    const now = at('2026-08-09T09:30:00');
+    const next = new Date(now.getTime() + msUntilGreetingChanges(now));
+
+    expect(greetingFor(next)).toBe('Good afternoon');
+    expect(greetingFor(new Date(next.getTime() - 1))).toBe('Good morning');
+  });
+
+  it('never asks for a timer of nothing', () => {
+    // On the boundary itself the honest answer is zero, and a timer set to zero would spin.
+    expect(msUntilGreetingChanges(at('2026-08-09T12:00:00'))).toBeGreaterThan(0);
+    expect(msUntilGreetingChanges(at('2026-08-09T18:00:00'))).toBeGreaterThan(0);
+  });
+
+  it('counts from the moment it is given, seconds and all', () => {
+    // Rounded up to the minute the timer would land early, with the greeting unchanged.
+    expect(msUntilGreetingChanges(at('2026-08-09T11:59:30'))).toBe(30 * 1000);
   });
 });
 
