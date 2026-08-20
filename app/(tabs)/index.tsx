@@ -7,12 +7,12 @@ import { ResumeCard } from '../../components/ResumeCard';
 import { ScreenHeader } from '../../components/ScreenHeader';
 import { SoundCard } from '../../components/SoundCard';
 import { useSoundStates } from '../../context/SoundStateContext';
+import { useGreeting } from '../../hooks/useGreeting';
 import { useLastSession } from '../../hooks/useLastSession';
 import { useTheme } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
 import { SOUND_FILTERS, findSound, isPlayable, soundsInCategory } from '../../store/sounds';
 import type { SoundCategory } from '../../store/sounds';
-import { greetingFor } from '../../utils/time';
 
 const GRID_GAP = SPACE.s14;
 
@@ -26,6 +26,8 @@ export default function SoundsScreen() {
   const { width } = useWindowDimensions();
   const { stateFor, toggleSaved } = useSoundStates();
   const { session } = useLastSession();
+  // Read from a hook rather than the clock: this screen outlives the hour it opened in.
+  const greeting = useGreeting();
   const [filter, setFilter] = useState<SoundCategory | 'all'>('all');
 
   // Two columns with a fixed width rather than `flex: 1`, so a row holding one card leaves
@@ -44,7 +46,7 @@ export default function SoundsScreen() {
   return (
     <SafeAreaView edges={['top']} style={[styles.screen, { backgroundColor: colors.background }]}>
       <ScreenHeader
-        greeting={greetingFor(new Date())}
+        greeting={greeting}
         title="Let's settle things"
         paddingBottom={0}
         action={<SettingsButton onPress={() => router.push('/settings')} />}

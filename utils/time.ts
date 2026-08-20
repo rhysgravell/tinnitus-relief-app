@@ -20,6 +20,36 @@ export function greetingFor(now: Date): string {
   return 'Good morning';
 }
 
+/**
+ * How long until `greetingFor` would answer differently: the next of noon, six, or midnight.
+ *
+ * Sounds is a tab, so it mounts once and stays mounted — a greeting worked out when it did
+ * would still read "Good afternoon" hours later. This is what the screen re-reads the clock
+ * on.
+ */
+export function msUntilGreetingChanges(now: Date): number {
+  const next = new Date(now);
+  next.setMinutes(0, 0, 0);
+
+  const hour = now.getHours();
+  if (hour < AFTERNOON_FROM) {
+    next.setHours(AFTERNOON_FROM);
+  } else if (hour < EVENING_FROM) {
+    next.setHours(EVENING_FROM);
+  } else {
+    // Evening runs to midnight, where morning starts again.
+    next.setHours(0);
+    next.setDate(next.getDate() + 1);
+  }
+
+  // On the boundary itself the answer is zero, and a timer set to zero would spin. A second
+  // late is not something anyone reads a greeting closely enough to notice.
+  return Math.max(MIN_GREETING_DELAY_MS, next.getTime() - now.getTime());
+}
+
+/** The shortest wait worth arming a timer for. */
+const MIN_GREETING_DELAY_MS = 1000;
+
 /** A time on the clock, with no date attached — what a reminder is set to. */
 export type TimeOfDay = { hour: number; minute: number };
 
