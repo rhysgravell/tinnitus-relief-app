@@ -32,6 +32,16 @@ describe('app config', () => {
     expect(expo.android.package).toBe(expo.ios.bundleIdentifier);
   });
 
+  it('claims a link scheme specific enough to be its own', () => {
+    // iOS lets any number of apps register the same scheme and picks between them by rules
+    // nobody controls, so a one-word scheme is a link that may open somebody else's app.
+    // "quiet" is a plausible name for a meditation app, a focus timer or a mute utility.
+    expect(expo.scheme).not.toBe(expo.slug);
+    // Lower case letters only. Anything else is a scheme some platform will refuse to
+    // register, and that is the sort of thing you find out on a device.
+    expect(expo.scheme).toMatch(/^[a-z]+$/);
+  });
+
   it('lets the system decide the appearance', () => {
     // Not a style preference: pinning this to light or dark pins what `useColorScheme`
     // answers with, and "Dark after sunset" is that answer. The app would be stuck in one

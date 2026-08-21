@@ -2,7 +2,7 @@
   "expo": {
     "name": "Quiet",
     "slug": "quiet",
-    "scheme": "quiet",
+    "scheme": "quietapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
