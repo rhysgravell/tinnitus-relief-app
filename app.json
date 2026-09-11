@@ -7,11 +7,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#EFF3F1"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.rhysgravell.quiet"
@@ -46,6 +41,19 @@
         {
           "icon": "./assets/android-icon-monochrome.png",
           "color": "#3F6B5C"
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#EFF3F1",
+          "imageWidth": 200,
+          "enableFullScreenImage_legacy": true,
+          "dark": {
+            "backgroundColor": "#0E1A1B"
+          }
         }
       ]
     ]

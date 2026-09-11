@@ -49,15 +49,42 @@ describe('app config', () => {
     expect(expo.userInterfaceStyle).toBe('automatic');
   });
 
-  it('opens on the palette the first screen is painted in', () => {
-    // The splash sits under the app for a frame either side of the handover.
-    expect(expo.splash.backgroundColor).toBe(COLORS.light.background);
-  });
-
   it('falls back to a colour from this design behind the app icon', () => {
     // Only ever seen where Android cannot use the background image. The icon artwork
     // itself is still the pre-redesign blue.
     expect(expo.android.adaptiveIcon.backgroundColor).toBe(COLORS.dark.background);
+  });
+});
+
+describe('the splash', () => {
+  it('opens on the palette the first screen is painted in', () => {
+    // The splash sits under the app for a frame either side of the handover.
+    expect(pluginOptions('expo-splash-screen')).toMatchObject({
+      backgroundColor: COLORS.light.background,
+    });
+  });
+
+  it('opens on the night palette when the phone has gone dark', () => {
+    // `useAppScheme` assumes dark before the stored setting arrives, because opening light
+    // and turning dark a moment later is a flash of white at exactly the hour the setting
+    // exists to avoid. The splash was the one surface still doing it: it is painted by the
+    // OS before any of this app's code runs, so only the manifest can say what colour it
+    // should be at night.
+    expect(pluginOptions('expo-splash-screen')).toMatchObject({
+      dark: { backgroundColor: COLORS.dark.background },
+    });
+  });
+
+  it('keeps the proportions it had before the plugin owned it', () => {
+    // A dark variant is only reachable through this plugin — the top-level `splash` key
+    // this replaced drops it on the way to both platforms. The plugin defaults to a
+    // smaller logo than that key did, so these two carry the old geometry across: the
+    // image was full-screen on iOS and 200pt wide on Android, and still is. Drop them and
+    // the splash quietly shrinks, on a screen nobody looks at twice.
+    expect(pluginOptions('expo-splash-screen')).toMatchObject({
+      enableFullScreenImage_legacy: true,
+      imageWidth: 200,
+    });
   });
 });
 
