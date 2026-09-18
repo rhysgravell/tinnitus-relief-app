@@ -105,7 +105,10 @@ export function relativeDayLabel(when: Date, now: Date): string {
 
   if (days <= 0) {
     // Something that finished at 1am today is colloquially last night, not this morning.
-    return when.getHours() < NIGHT_UNTIL_HOUR ? 'Last night' : 'Earlier today';
+    if (when.getHours() < NIGHT_UNTIL_HOUR) return 'Last night';
+    // And a session at nine, looked back on at eleven, was tonight — the evening is when
+    // this app gets used, so this is the case the label meets most.
+    return when.getHours() >= EVENING_FROM ? 'Earlier tonight' : 'Earlier today';
   }
 
   if (days === 1) {
