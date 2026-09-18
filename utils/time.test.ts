@@ -79,6 +79,17 @@ describe('relativeDayLabel', () => {
     expect(relativeDayLabel(at('2026-08-09T09:00:00'), now)).toBe('Earlier today');
   });
 
+  it('calls a session earlier the same evening earlier tonight', () => {
+    // Nine o'clock seen from eleven: "Earlier today" is true but not how anyone says it.
+    expect(relativeDayLabel(at('2026-08-09T21:00:00'), at('2026-08-09T23:00:00'))).toBe(
+      'Earlier tonight'
+    );
+  });
+
+  it('keeps an afternoon session as earlier today, even seen from the evening', () => {
+    expect(relativeDayLabel(at('2026-08-09T17:59:00'), now)).toBe('Earlier today');
+  });
+
   it('calls a session that ran past midnight last night', () => {
     // Technically today, but nobody describes 1am as this morning.
     expect(relativeDayLabel(at('2026-08-09T01:00:00'), now)).toBe('Last night');
