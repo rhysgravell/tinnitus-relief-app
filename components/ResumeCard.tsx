@@ -6,6 +6,7 @@ import { Text } from './Text';
 import { useTheme } from '../theme/ThemeProvider';
 import { SPACE } from '../theme/tokens';
 import { relativeDayLabel } from '../utils/time';
+import { timerAccessibilityLabel } from '../store/settings';
 import type { Sound } from '../store/sounds';
 import type { Session } from '../store/sessions';
 
@@ -34,13 +35,19 @@ export function ResumeCard({ sound, session, onPress, now = new Date() }: Props)
   const when = relativeDayLabel(new Date(session.endedAt), now);
   const timer = session.timerMinutes === null ? null : `timer ${session.timerMinutes}m`;
   const meta = [when, `${session.durationMinutes} min`, timer].filter(Boolean).join(' · ');
+  // The same line for a screen reader, which says "45m" as forty-five metres and reads the
+  // middle dots as nothing at all — so whole words, and commas to pause on.
+  const minutes = session.durationMinutes === 1 ? '1 minute' : `${session.durationMinutes} minutes`;
+  const spokenTimer =
+    session.timerMinutes === null ? null : `timer ${timerAccessibilityLabel(session.timerMinutes)}`;
+  const spokenMeta = [when, minutes, spokenTimer].filter(Boolean).join(', ');
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`Continue ${sound.name}`}
-      accessibilityHint={meta}
+      accessibilityHint={spokenMeta}
       style={({ pressed }) => pressed && styles.pressed}
     >
       <Card testID="resume-card" variant="hero" padding={0} clip>
