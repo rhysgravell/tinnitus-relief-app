@@ -55,6 +55,19 @@ describe('ResumeCard', () => {
     expect(screen.getByText('Last night · 42 min')).toBeTruthy();
   });
 
+  it('spells the summary out for a screen reader', () => {
+    renderCard();
+    // "45m" is read aloud as forty-five metres, and the middle dots are not read at all.
+    const card = screen.getByRole('button', { name: 'Continue Underwater' });
+    expect(card.props.accessibilityHint).toBe('Last night, 42 minutes, timer 45 minutes');
+  });
+
+  it('says one minute, not one minutes', () => {
+    renderCard({ durationMinutes: 1, timerMinutes: null });
+    const card = screen.getByRole('button', { name: 'Continue Underwater' });
+    expect(card.props.accessibilityHint).toBe('Last night, 1 minute');
+  });
+
   it('resumes from anywhere on the card, not just the play circle', () => {
     renderCard();
     fireEvent.press(screen.getByRole('button', { name: 'Continue Underwater' }));
