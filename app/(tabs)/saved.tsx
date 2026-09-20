@@ -10,7 +10,7 @@ import { Text } from '../../components/Text';
 import { useSoundStates } from '../../context/SoundStateContext';
 import { useTheme } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
-import { savedMeta, savedSounds } from '../../store/saved';
+import { savedMeta, savedSounds, savedSpokenMeta } from '../../store/saved';
 import { isPlayable } from '../../store/sounds';
 
 /**
@@ -61,6 +61,7 @@ export default function SavedScreen() {
             <SavedRow
               sound={item.sound}
               meta={savedMeta(item)}
+              spokenMeta={savedSpokenMeta(item)}
               onPress={() => openSession(item.sound.id)}
             />
           )}

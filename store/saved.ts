@@ -40,7 +40,32 @@ export function savedSounds(states: SoundStates): SavedSound[] {
  * The design also puts "notched" here. That belongs to the notch-filtering work, which
  * has not shipped, so claiming it would be a lie about what the sound is doing.
  */
-export function savedMeta({ sound, state, mostPlayed }: SavedSound): string {
+export function savedMeta(entry: SavedSound): string {
+  // Lower case, because this is the back half of a phrase rather than a label of its own.
+  return composeMeta(entry, (minutes) => (minutes === null ? 'no timer' : `${minutes}m`), ' · ');
+}
+
+/**
+ * The same line for a screen reader, which says "30m" as thirty metres and reads the middle
+ * dot as nothing at all — so whole words, and a comma to pause on.
+ */
+export function savedSpokenMeta(entry: SavedSound): string {
+  return composeMeta(
+    entry,
+    (minutes) => (minutes === null ? 'no timer' : `${minutes} minutes`),
+    ', '
+  );
+}
+
+/**
+ * Both readings of the line, so the wording can only ever differ in the timer and the
+ * separator — the two things a screen reader needs said differently.
+ */
+function composeMeta(
+  { sound, state, mostPlayed }: SavedSound,
+  timerText: (minutes: number | null) => string,
+  separator: string
+): string {
   if (!isPlayable(sound)) return 'Coming soon';
   // Nothing to promise about a sound that has never played: its session will open on the
   // default timer from Settings rather than on the untouched value stored here.
@@ -49,8 +74,6 @@ export function savedMeta({ sound, state, mostPlayed }: SavedSound): string {
   const plays = mostPlayed
     ? 'Your most-played'
     : `${state.sessionCount} session${state.sessionCount === 1 ? '' : 's'}`;
-  // Lower case, because this is the back half of a phrase rather than a label of its own.
-  const timer = state.lastTimerMinutes === null ? 'no timer' : `${state.lastTimerMinutes}m`;
 
-  return `${plays} · ${timer}`;
+  return `${plays}${separator}${timerText(state.lastTimerMinutes)}`;
 }

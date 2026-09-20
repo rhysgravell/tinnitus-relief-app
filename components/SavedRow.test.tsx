@@ -11,10 +11,14 @@ function sound(id: string) {
   return found;
 }
 
-function renderRow(id = 'evening-forest', meta = '14 sessions · 30m') {
+function renderRow(
+  id = 'evening-forest',
+  meta = '14 sessions · 30m',
+  spokenMeta = '14 sessions, 30 minutes'
+) {
   render(
     <ThemeProvider scheme="light">
-      <SavedRow sound={sound(id)} meta={meta} onPress={onPress} />
+      <SavedRow sound={sound(id)} meta={meta} spokenMeta={spokenMeta} onPress={onPress} />
     </ThemeProvider>
   );
 }
@@ -43,7 +47,8 @@ describe('SavedRow', () => {
   it('offers the row to assistive tech by name, with the context as a hint', () => {
     renderRow();
     expect(row('evening-forest').props.accessibilityLabel).toBe('Evening Forest');
-    expect(row('evening-forest').props.accessibilityHint).toBe('14 sessions · 30m');
+    // What the screen reader gets, which is not the abbreviated line on screen.
+    expect(row('evening-forest').props.accessibilityHint).toBe('14 sessions, 30 minutes');
   });
 
   it('shows what pressing it does', () => {
