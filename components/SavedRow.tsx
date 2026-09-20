@@ -14,6 +14,8 @@ type Props = {
   sound: Sound;
   /** The context line — plays and timer. Composed by `savedMeta`. */
   meta: string;
+  /** The same line as it should be spoken. Composed by `savedSpokenMeta`. */
+  spokenMeta: string;
   onPress: () => void;
 };
 
@@ -25,7 +27,7 @@ type Props = {
  * The whole row is the target, as on the resume card — the circle says what the row does,
  * but it would be a small thing to have to aim at.
  */
-export function SavedRow({ sound, meta, onPress }: Props) {
+export function SavedRow({ sound, meta, spokenMeta, onPress }: Props) {
   const { colors } = useTheme();
   // A sound whose recording has not shipped stays in the list — it is saved, and hiding it
   // would look like the star had been lost — but there is nothing to play.
@@ -39,7 +41,7 @@ export function SavedRow({ sound, meta, onPress }: Props) {
       accessibilityRole="button"
       accessibilityState={{ disabled: !available }}
       accessibilityLabel={sound.name}
-      accessibilityHint={meta}
+      accessibilityHint={spokenMeta}
       style={({ pressed }) => [pressed && styles.pressed, !available && styles.unavailable]}
     >
       <Card padding={0} style={styles.row}>

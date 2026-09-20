@@ -1,4 +1,4 @@
-import { savedMeta, savedSounds } from './saved';
+import { savedMeta, savedSounds, savedSpokenMeta } from './saved';
 import type { SavedSound } from './saved';
 import { findSound } from './sounds';
 import { DEFAULT_SOUND_STATE } from './soundState';
@@ -90,6 +90,25 @@ describe('savedSounds', () => {
   it('drops a saved sound that has left the catalogue', () => {
     // Sounds an earlier build shipped are still in a returning user's storage.
     expect(savedSounds(states({ 'peaceful-morning': { sessionCount: 4 } }))).toEqual([]);
+  });
+});
+
+describe('savedSpokenMeta', () => {
+  it('says the timer in words, since "30m" is read out as thirty metres', () => {
+    expect(
+      savedSpokenMeta(entry('evening-forest', { sessionCount: 14, lastTimerMinutes: 30 }))
+    ).toBe('14 sessions, 30 minutes');
+  });
+
+  it('keeps saying no timer, which already reads aloud', () => {
+    expect(savedSpokenMeta(entry('underwater', { sessionCount: 3, lastTimerMinutes: null }))).toBe(
+      '3 sessions, no timer'
+    );
+  });
+
+  it('reads the same as the visible line where there is nothing to spell out', () => {
+    const unplayed = entry('underwater', { sessionCount: 0 });
+    expect(savedSpokenMeta(unplayed)).toBe(savedMeta(unplayed));
   });
 });
 
