@@ -1,4 +1,4 @@
-import { localDate, MIN_ENTRIES_FOR_TREND } from './checkIns';
+import { localDate, MIN_ENTRIES_FOR_TREND, nightAnchor } from './checkIns';
 import type { CheckIn } from './checkIns';
 
 /** The window the trend opens on, and the wider one behind "See more". */
@@ -29,10 +29,9 @@ export function trendWindow(
   const window: TrendDay[] = [];
 
   for (let back = days - 1; back >= 0; back -= 1) {
-    const date = new Date(now);
-    // Stepping back from midday keeps the arithmetic on the right date through a clock
-    // change, where a day is 23 hours long and midnight minus 24 hours lands on itself.
-    date.setHours(12, 0, 0, 0);
+    // Ends on the night being lived rather than on the calendar date, so a check-in filled
+    // in at 1am is inside the window it was just added to rather than off the end of it.
+    const date = nightAnchor(now);
     date.setDate(date.getDate() - back);
     const key = localDate(date);
     window.push({ date: key, entry: byDate.get(key) });

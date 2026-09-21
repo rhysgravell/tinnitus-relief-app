@@ -224,12 +224,13 @@ describe('Check-in screen', () => {
     expect(screen.queryByTestId('trend-bar-2026-07-20')).toBeNull();
   });
 
-  it('starts a fresh day when the screen is returned to after midnight', async () => {
+  it('starts a fresh day when the screen is returned to after the night turns over', async () => {
     history([entry('2026-08-14', 2)]);
     await renderScreen();
     expect(screen.getByText('Saved')).toBeTruthy();
 
-    jest.setSystemTime(new Date(2026, 7, 15, 0, 30));
+    // Morning, not midnight: at 00:30 the screen is still answering for the same night.
+    jest.setSystemTime(new Date(2026, 7, 15, 9, 0));
     await refocus();
 
     expect(screen.getByText('Save today')).toBeTruthy();

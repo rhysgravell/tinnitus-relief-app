@@ -4,8 +4,8 @@ import {
   draftStatus,
   EMPTY_DRAFT,
   getCheckIns,
+  nightDate,
   saveCheckIn,
-  today,
 } from '../store/checkIns';
 import { getSessions, sessionNights } from '../store/sessions';
 import type { CheckIn, CheckInDraft, DraftStatus, Loudness, Mood } from '../store/checkIns';
@@ -53,7 +53,7 @@ export function useCheckIn(): UseCheckIn {
   const [answer, setAnswer] = useState<Answer>(NO_ANSWER);
 
   const refresh = useCallback(async () => {
-    const date = today();
+    const date = nightDate();
     // Both at once: the sentence under the chart is written from the two together, and
     // reading them one after the other would put it on screen twice.
     const [stored, sessions] = await Promise.all([getCheckIns(), getSessions()]);
@@ -61,7 +61,7 @@ export function useCheckIn(): UseCheckIn {
     setNights(sessionNights(sessions));
 
     // An answer half-given is left alone on the way back to the screen, but not carried
-    // across midnight: it was about yesterday.
+    // across the 5am turnover: it was about the night before.
     setAnswer((current) =>
       current.day === date
         ? current
@@ -82,8 +82,8 @@ export function useCheckIn(): UseCheckIn {
   const save = useCallback(() => {
     if (draft.loudness === null || draft.mood === null) return;
     // Read again rather than trusting `day`: the screen may have been open since before
-    // midnight, and the entry belongs to the date it is being written on.
-    const date = today();
+    // the turnover, and the entry belongs to the night it is being written on.
+    const date = nightDate();
     setAnswer({ day: date, draft });
     // The button reads its own state off `entries`, so a write that never lands leaves it
     // saying "Save today" rather than claiming the day is logged. Nothing more to do here

@@ -149,19 +149,33 @@ describe('useCheckIn', () => {
     expect(result.current.entries).toEqual([logged]);
   });
 
-  it('starts a fresh day when the date rolls over', async () => {
-    // The screen can sit open past midnight. Yesterday's half-answer is not today's.
+  it('starts a fresh day when the night turns over', async () => {
+    // The screen can sit open all night. Last night's half-answer is not tonight's.
     history([logged]);
     const { result } = await setup();
     expect(result.current.draft).toEqual({ loudness: 2, mood: 'calm' });
 
-    jest.setSystemTime(new Date(2026, 7, 15, 0, 30));
+    jest.setSystemTime(new Date(2026, 7, 15, 9, 0));
     await act(async () => {
       await result.current.refresh();
     });
 
     expect(result.current.draft).toEqual({ loudness: null, mood: null });
     expect(result.current.status).toBe('incomplete');
+  });
+
+  it('is still the same night at half past midnight', async () => {
+    // Midnight is not the turnover: someone checking in at 00:30 is answering for the
+    // night they have just had, and the answer they had half-given still stands.
+    history([logged]);
+    const { result } = await setup();
+
+    jest.setSystemTime(new Date(2026, 7, 15, 0, 30));
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.draft).toEqual({ loudness: 2, mood: 'calm' });
   });
 
   it('brings back the nights a session ran on', async () => {
@@ -186,12 +200,29 @@ describe('useCheckIn', () => {
     expect(sessions.getSessions).toHaveBeenCalledTimes(1);
   });
 
-  it('files a check-in saved after midnight under the new day', async () => {
+  it('files a check-in saved after midnight under the night it is about', async () => {
+    // The session that ran at 11pm is filed under the 14th; a check-in typed at 00:30 has
+    // to land on the same night, or the trend counts that night as one without a session.
     const { result } = await setup();
     act(() => result.current.setLoudness(3));
     act(() => result.current.setMood('low'));
 
     jest.setSystemTime(new Date(2026, 7, 15, 0, 30));
+    await act(async () => result.current.save());
+
+    expect(checkIns.saveCheckIn).toHaveBeenCalledWith({
+      date: '2026-08-14',
+      loudness: 3,
+      mood: 'low',
+    });
+  });
+
+  it('files a check-in saved after the turnover under the new night', async () => {
+    const { result } = await setup();
+    act(() => result.current.setLoudness(3));
+    act(() => result.current.setMood('low'));
+
+    jest.setSystemTime(new Date(2026, 7, 15, 9, 0));
     await act(async () => result.current.save());
 
     expect(checkIns.saveCheckIn).toHaveBeenCalledWith({

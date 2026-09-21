@@ -51,6 +51,15 @@ describe('trendWindow', () => {
     expect(loggedDays(window)).toEqual([]);
   });
 
+  it('ends on the night being lived, not on the calendar date', () => {
+    // At 00:30 the last column is still the 14th — the night the check-in just typed in
+    // is filed under. Ending on the 15th would show that check-in as yesterday's, and
+    // leave an empty column where the user is looking for what they just logged.
+    const window = trendWindow([entry('2026-08-14', 3)], 3, new Date(2026, 7, 15, 0, 30));
+    expect(window.map((day) => day.date)).toEqual(['2026-08-12', '2026-08-13', '2026-08-14']);
+    expect(window[2].entry?.loudness).toBe(3);
+  });
+
   it('crosses a month boundary', () => {
     const window = trendWindow([], 3, new Date(2026, 8, 1, 12, 0));
     expect(window.map((day) => day.date)).toEqual(['2026-08-30', '2026-08-31', '2026-09-01']);

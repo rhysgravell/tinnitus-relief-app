@@ -1,6 +1,5 @@
-import { localDate } from './checkIns';
+import { nightDate } from './checkIns';
 import { readJson, removeKey, updateJson, writeJson } from './storage';
-import { NIGHT_UNTIL_HOUR } from '../utils/time';
 
 const KEY = 'sessions';
 
@@ -89,13 +88,7 @@ export async function getLastSession(): Promise<Session | null> {
  * card's wording uses — so it lines up with the check-in for the day it was really part of.
  */
 export function sessionNights(sessions: Session[]): Set<string> {
-  return new Set(sessions.map(({ endedAt }) => nightOf(new Date(endedAt))));
-}
-
-function nightOf(when: Date): string {
-  const night = new Date(when);
-  if (night.getHours() < NIGHT_UNTIL_HOUR) night.setDate(night.getDate() - 1);
-  return localDate(night);
+  return new Set(sessions.map(({ endedAt }) => nightDate(new Date(endedAt))));
 }
 
 function sortedNewestFirst(sessions: Session[]): Session[] {
