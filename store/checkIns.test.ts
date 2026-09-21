@@ -6,8 +6,8 @@ import {
   LOUDNESS_LEVELS,
   MOOD_OPTIONS,
   saveCheckIn,
+  nightDate,
   saveLabel,
-  today,
 } from './checkIns';
 import type { CheckIn } from './checkIns';
 
@@ -15,19 +15,30 @@ beforeEach(async () => {
   await AsyncStorage.clear();
 });
 
-describe('today', () => {
+describe('nightDate', () => {
   it('formats the local date as YYYY-MM-DD', () => {
-    expect(today(new Date(2026, 7, 8, 12, 0))).toBe('2026-08-08');
+    expect(nightDate(new Date(2026, 7, 8, 12, 0))).toBe('2026-08-08');
   });
 
   it('pads single-digit months and days', () => {
-    expect(today(new Date(2026, 0, 3, 12, 0))).toBe('2026-01-03');
+    expect(nightDate(new Date(2026, 0, 3, 12, 0))).toBe('2026-01-03');
   });
 
   it('uses the local date late at night, not the UTC one', () => {
     // 23:30 local on the 8th is already the 9th in UTC for anyone west of the line.
     // Getting this wrong would file a bedtime check-in under tomorrow.
-    expect(today(new Date(2026, 7, 8, 23, 30))).toBe('2026-08-08');
+    expect(nightDate(new Date(2026, 7, 8, 23, 30))).toBe('2026-08-08');
+  });
+
+  it('files the small hours under the night before', () => {
+    // 1am on the 9th is the night of the 8th — the same night `sessions.ts` files a
+    // session that ran past midnight under.
+    expect(nightDate(new Date(2026, 7, 9, 1, 0))).toBe('2026-08-08');
+  });
+
+  it('turns over at 5am', () => {
+    expect(nightDate(new Date(2026, 7, 9, 4, 59))).toBe('2026-08-08');
+    expect(nightDate(new Date(2026, 7, 9, 5, 0))).toBe('2026-08-09');
   });
 });
 

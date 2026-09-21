@@ -1,4 +1,5 @@
 import { readJson, updateJson } from './storage';
+import { NIGHT_UNTIL_HOUR } from '../utils/time';
 
 const KEY = 'checkIns';
 
@@ -44,8 +45,26 @@ export function localDate(date: Date): string {
   return `${date.getFullYear()}-${month}-${day}`;
 }
 
-export function today(now: Date = new Date()): string {
-  return localDate(now);
+/**
+ * The date a moment is logged under. The app's day turns over at 5am, not at midnight:
+ * a check-in filled in at 1am is about the night that has just been had, and `sessions.ts`
+ * files a session that ran past midnight under the same night. Dating the two differently
+ * is what made the trend's sentence miss exactly the sessions it was meant to count.
+ */
+export function nightDate(now: Date = new Date()): string {
+  return localDate(nightAnchor(now));
+}
+
+/**
+ * Midday on the night a moment belongs to — the date, as a date, for stepping back through
+ * a window of days. Midday rather than midnight so a clock change, where a day is 23 hours
+ * long, cannot carry the arithmetic onto the wrong date.
+ */
+export function nightAnchor(now: Date): Date {
+  const night = new Date(now);
+  if (night.getHours() < NIGHT_UNTIL_HOUR) night.setDate(night.getDate() - 1);
+  night.setHours(12, 0, 0, 0);
+  return night;
 }
 
 /** Oldest first, so the trend chart can render straight from this. */
