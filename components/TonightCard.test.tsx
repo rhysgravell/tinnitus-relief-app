@@ -10,6 +10,7 @@ function renderCard(props: Partial<Parameters<typeof TonightCard>[0]> = {}) {
     <ThemeProvider scheme="dark">
       <TonightCard
         time="22:30"
+        spokenTime="10:30 pm"
         summary="45 min · Underwater"
         reminderOn={false}
         onReminderChange={onReminderChange}
@@ -42,7 +43,14 @@ describe('TonightCard', () => {
 
   it('names the time in the switch, which has no visible label of its own', () => {
     renderCard();
-    expect(reminder().props.accessibilityLabel).toBe('Remind me at 22:30');
+    // Spoken, not the 24 hour clock on screen: "22:30" is read out as a pair of numbers.
+    expect(reminder().props.accessibilityLabel).toBe('Remind me at 10:30 pm');
+  });
+
+  it('speaks the heading time too, while showing the clock the design draws', () => {
+    renderCard();
+    expect(screen.getByLabelText('Wind-down at 10:30 pm')).toBeTruthy();
+    expect(screen.getByText('Wind-down at 22:30')).toBeTruthy();
   });
 
   it('reports the reminder as off until it is on', () => {

@@ -18,7 +18,7 @@ import { ThemeProvider } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
 import { ROUTINE } from '../../store/routine';
 import { tonightSound, tonightSummary } from '../../store/tonight';
-import { formatTimeOfDay } from '../../utils/time';
+import { formatTimeOfDay, spokenTimeOfDay } from '../../utils/time';
 
 /** The night gradient stops higher up this screen than on the session. */
 const GRADIENT_STOP = 46;
@@ -65,6 +65,7 @@ function Sleep() {
           {ready ? (
             <TonightCard
               time={formatTimeOfDay(at)}
+              spokenTime={spokenTimeOfDay(at)}
               summary={tonightSummary(sound, settings.defaultTimerMinutes)}
               reminderOn={windDown.enabled}
               onReminderChange={windDown.setEnabled}
