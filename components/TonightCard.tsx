@@ -9,6 +9,8 @@ import { LAYOUT, SPACE } from '../theme/tokens';
 type Props = {
   /** "22:30" — when the reminder is set for. */
   time: string;
+  /** The same time as it should be spoken. Composed by `spokenTimeOfDay`. */
+  spokenTime: string;
   /** How long tonight's session will run, and what it will play. */
   summary: string;
   reminderOn: boolean;
@@ -28,6 +30,7 @@ type Props = {
  */
 export function TonightCard({
   time,
+  spokenTime,
   summary,
   reminderOn,
   onReminderChange,
@@ -41,7 +44,12 @@ export function TonightCard({
           <SectionLabel tone="primary" style={styles.label}>
             Tonight
           </SectionLabel>
-          <Text variant="cardTitleHero">{`Wind-down at ${time}`}</Text>
+          {/* The 24 hour clock is the design's, not the user's: a screen reader says
+              "22:30" as a pair of numbers, and half ten is how they think of it. */}
+          <Text
+            variant="cardTitleHero"
+            accessibilityLabel={`Wind-down at ${spokenTime}`}
+          >{`Wind-down at ${time}`}</Text>
           <Text variant="bodySecondary" tone="muted" style={styles.summary}>
             {denied
               ? 'Notifications are off for this app, so there will be no reminder.'
@@ -51,7 +59,7 @@ export function TonightCard({
         <Toggle
           value={reminderOn}
           onValueChange={onReminderChange}
-          accessibilityLabel={`Remind me at ${time}`}
+          accessibilityLabel={`Remind me at ${spokenTime}`}
         />
       </View>
       <SecondaryButton label="Start now" onPress={onStart} style={styles.start} />
