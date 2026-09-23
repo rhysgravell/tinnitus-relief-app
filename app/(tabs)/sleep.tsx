@@ -10,6 +10,7 @@ import { ScreenHeader } from '../../components/ScreenHeader';
 import { ScreenStatusBar } from '../../components/ScreenStatusBar';
 import { SectionLabel } from '../../components/SectionLabel';
 import { TonightCard } from '../../components/TonightCard';
+import { usePlayback } from '../../context/PlaybackContext';
 import { useSettings } from '../../context/SettingsContext';
 import { useSoundStates } from '../../context/SoundStateContext';
 import { useLastSession } from '../../hooks/useLastSession';
@@ -44,6 +45,9 @@ function Sleep() {
   // and a default timer changed in Settings has to reach the card rather than wait for a
   // relaunch.
   const { settings } = useSettings();
+  // Whether the breathing sheet can promise a sound underneath. `silent` covers a sound
+  // that is loaded but has no recording — the placeholder catalogue has one.
+  const { playing, silent } = usePlayback();
 
   const [breathing, setBreathing] = useState(false);
 
@@ -104,7 +108,11 @@ function Sleep() {
           ))}
         </ScrollView>
 
-        <BreathingExercise visible={breathing} onClose={() => setBreathing(false)} />
+        <BreathingExercise
+          visible={breathing}
+          onClose={() => setBreathing(false)}
+          soundPlaying={playing && !silent}
+        />
       </SafeAreaView>
     </ScreenBackground>
   );

@@ -20,8 +20,10 @@ function advance(ms: number) {
   });
 }
 
-function renderExercise(visible = true) {
-  return render(<BreathingExercise visible={visible} onClose={onClose} />);
+function renderExercise(visible = true, soundPlaying = true) {
+  return render(
+    <BreathingExercise visible={visible} onClose={onClose} soundPlaying={soundPlaying} />
+  );
 }
 
 beforeEach(() => {
@@ -43,6 +45,14 @@ describe('BreathingExercise', () => {
   it('says what to do with the sound that is already playing', () => {
     renderExercise();
     expect(screen.getByText(/Your sound keeps playing underneath/)).toBeTruthy();
+  });
+
+  it('does not promise a sound when there is none', () => {
+    // The routine can be run without ever opening one, and the promise is the routine's,
+    // not something this sheet can make on its own.
+    renderExercise(true, false);
+    expect(screen.queryByText(/Your sound keeps playing underneath/)).toBeNull();
+    expect(screen.getByText(/breathe at the pace it sets/)).toBeTruthy();
   });
 
   it('counts the phase down and moves on to the next', () => {

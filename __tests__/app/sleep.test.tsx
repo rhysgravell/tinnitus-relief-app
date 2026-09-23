@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Pressable } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import SleepScreen from '../../app/(tabs)/sleep';
+import { usePlayback } from '../../context/PlaybackContext';
 import { SettingsProvider, useSettings } from '../../context/SettingsContext';
 import { SoundStateProvider } from '../../context/SoundStateContext';
 import * as reminders from '../../store/reminders';
@@ -16,6 +17,12 @@ import type { Session } from '../../store/sessions';
 // This test lives outside `app/` on purpose — Expo Router bundles every file under the app
 // directory as a route. See the guard in ./routes.test.ts.
 
+// The playback provider pulls in expo-audio and a player this screen never drives. Sleep
+// only asks it one question — whether a sound is playing underneath the breathing sheet.
+jest.mock('../../context/PlaybackContext', () => ({
+  usePlayback: jest.fn(),
+}));
+
 jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
   // The real hook needs a navigator; running the effect once matches a first focus.
@@ -23,6 +30,13 @@ jest.mock('expo-router', () => ({
 }));
 
 const push = jest.fn();
+
+/** What the provider reports. Only the two fields the screen reads are needed. */
+function playback(state: { playing: boolean; silent?: boolean }) {
+  jest
+    .mocked(usePlayback)
+    .mockReturnValue({ silent: false, ...state } as ReturnType<typeof usePlayback>);
+}
 
 const lastSession: Session = {
   soundId: 'evening-forest',
@@ -72,6 +86,7 @@ beforeEach(() => {
     useEffect(() => effect(), [effect]);
   });
 
+  playback({ playing: false });
   jest.spyOn(settings, 'getSettings').mockResolvedValue(DEFAULT_SETTINGS);
   jest.spyOn(settings, 'updateSettings').mockResolvedValue(DEFAULT_SETTINGS);
   jest.spyOn(sessions, 'getLastSession').mockResolvedValue(null);
@@ -233,6 +248,24 @@ describe('Sleep screen', () => {
 
     expect(screen.getByText('Breathe in')).toBeTruthy();
     expect(push).not.toHaveBeenCalled();
+  });
+
+  it('promises the sound underneath only when one is playing', async () => {
+    playback({ playing: true });
+    await renderScreen();
+    fireEvent.press(screen.getByRole('button', { name: 'Start slow breathing' }));
+
+    expect(screen.getByText(/Your sound keeps playing underneath/)).toBeTruthy();
+  });
+
+  it('says nothing about a sound when the routine is run on its own', async () => {
+    // Nothing was ever opened, so there is no sound to keep playing — the breathing can be
+    // started straight from this screen.
+    await renderScreen();
+    fireEvent.press(screen.getByRole('button', { name: 'Start slow breathing' }));
+
+    expect(screen.queryByText(/Your sound keeps playing underneath/)).toBeNull();
+    expect(screen.getByText(/breathe at the pace it sets/)).toBeTruthy();
   });
 
   it('shows what a saved sound is when there is no session to repeat', async () => {
