@@ -26,6 +26,12 @@ const EXPANDED = 1;
 type Props = {
   visible: boolean;
   onClose: () => void;
+  /**
+   * Whether a sound is actually playing underneath. The routine promises one keeps going
+   * through the breathing, but the exercise can be started from a screen where nothing was
+   * ever opened — and then the promise is about a sound that does not exist.
+   */
+  soundPlaying?: boolean;
 };
 
 /**
@@ -35,19 +41,19 @@ type Props = {
  * A night surface whatever the app is set to, like the session — this is only ever reached
  * from the Sleep screen, and a mist-coloured sheet over it at 11pm would be a shock.
  */
-export function BreathingExercise({ visible, onClose }: Props) {
+export function BreathingExercise({ visible, onClose, soundPlaying = false }: Props) {
   return (
     <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
       <ThemeProvider scheme="dark">
         {/* Mounted only while open, so the clock starts from zero each time rather than
             carrying on from a previous run. */}
-        {visible ? <Exercise onClose={onClose} /> : null}
+        {visible ? <Exercise onClose={onClose} soundPlaying={soundPlaying} /> : null}
       </ThemeProvider>
     </Modal>
   );
 }
 
-function Exercise({ onClose }: { onClose: () => void }) {
+function Exercise({ onClose, soundPlaying }: { onClose: () => void; soundPlaying: boolean }) {
   const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
   const [finished, setFinished] = useState(false);
@@ -82,7 +88,9 @@ function Exercise({ onClose }: { onClose: () => void }) {
             <Text variant="bodySecondary" tone="muted" style={styles.hint}>
               {finished
                 ? 'Carry the same rhythm into bed with you.'
-                : 'Follow the circle. Your sound keeps playing underneath.'}
+                : soundPlaying
+                  ? 'Follow the circle. Your sound keeps playing underneath.'
+                  : 'Follow the circle, and breathe at the pace it sets.'}
             </Text>
           </View>
         </View>
