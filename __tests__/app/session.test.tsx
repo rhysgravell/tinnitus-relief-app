@@ -265,6 +265,27 @@ describe('Session screen', () => {
     expect(back).toHaveBeenCalled();
   });
 
+  it('says which exit ends the session and which one leaves it playing', async () => {
+    // Two chevron-sized glyphs that do opposite things. A sighted user has the moon to go
+    // on; a screen reader user has only what these say.
+    await renderSession();
+    expect(screen.getByRole('button', { name: 'Close session' }).props.accessibilityHint).toBe(
+      'Stops the sound and ends the session'
+    );
+    expect(
+      screen.getByRole('button', { name: 'Wind down for the night' }).props.accessibilityHint
+    ).toBe('Opens Sleep, leaving the sound playing');
+  });
+
+  it('does not offer to stop a sound that was never going to play', async () => {
+    // Nothing in the catalogue for this one, so there is nothing to stop — only a session
+    // to leave.
+    await renderSession('peaceful-morning');
+    expect(screen.getByRole('button', { name: 'Close session' }).props.accessibilityHint).toBe(
+      'Ends the session'
+    );
+  });
+
   it('hands over to the Sleep screen rather than stacking it on top of the session', async () => {
     await renderSession();
     fireEvent.press(screen.getByRole('button', { name: 'Wind down for the night' }));
