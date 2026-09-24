@@ -93,6 +93,13 @@ function Session() {
             onPress={() => router.back()}
             accessibilityRole="button"
             accessibilityLabel="Close session"
+            // Both exits are chevrons to the eye; only this one ends the session, and
+            // nothing on screen says which does what. It cannot claim to stop a sound
+            // that is not playing — a sound whose recording has not shipped, or none
+            // loaded at all.
+            accessibilityHint={
+              sound && !silent ? 'Stops the sound and ends the session' : 'Ends the session'
+            }
             hitSlop={SPACE.s12}
           >
             {/* A text character rather than an icon: this design ships no icon library. */}
@@ -156,6 +163,7 @@ function Session() {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Wind down for the night"
+                accessibilityHint="Opens Sleep, leaving the sound playing"
                 hitSlop={SPACE.s12}
               >
                 <RNText style={[styles.moon, { color: colors.textMuted }]}>☾</RNText>
