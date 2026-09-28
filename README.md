@@ -77,6 +77,27 @@ Every colour, radius, font and spacing value comes from `theme/tokens.ts`; scree
 components never hardcode one. Tests sit beside the code they cover, except for screens —
 Expo Router bundles everything under `app/`, so those live in `__tests__/app/`.
 
+## Three conventions worth knowing before changing anything
+
+**The day turns over at 5am, not at midnight.** A session that ends at 00:40 and a check-in
+filled in at 01:00 are both about the night that has just been had, so both are filed under
+the date before. `nightDate()` in `store/checkIns.ts` is the only thing that decides this,
+and the trend chart's last column follows it too. Dating anything by the plain calendar date
+puts it on a different day from the session it belongs beside.
+
+**A screen reader gets its own wording where the visible text is abbreviated.** "45m" is read
+aloud as forty-five metres, "22:30" as a pair of numbers, and a middle dot as nothing at all.
+So the compact line on screen stays as the design draws it, and a spoken version travels
+beside it: `spokenTimeOfDay()` and `timerAccessibilityLabel()` compose one, and components
+that take a visible string take the spoken one next to it — `SavedRow`'s `spokenMeta`,
+`TonightCard`'s `spokenTime`.
+
+**The app never claims something it is not doing.** A sound whose recording has not shipped
+says "Coming soon" rather than failing on a tap; the breathing sheet only promises a sound
+underneath when one is playing; the session's chevron only offers to stop a sound that is
+audible. When a design line and the app's actual state disagree, the state wins and the copy
+bends around it.
+
 ## The sound files are placeholders
 
 `assets/sounds/` holds four `.wav` files that are one second of digital silence, and
