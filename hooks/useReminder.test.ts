@@ -305,6 +305,39 @@ describe('checking what the OS will actually do', () => {
     expect(result.current.denied).toBe(true);
   });
 
+  it('stops blaming the OS once notifications are allowed again', async () => {
+    // The refusal is undone in the phone's settings, which tells this app no more than the
+    // refusal did. Until the row is asked again it goes on saying notifications are off.
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('denied');
+    stored({ windDownEnabled: true, windDownTime: '22:30' });
+    const { result } = await setup();
+    await waitFor(() => expect(result.current.denied).toBe(true));
+
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('missing');
+    await act(async () => {
+      foreground();
+    });
+
+    expect(result.current.denied).toBe(false);
+    // The switch stays off: the OS allowing a reminder is not the same as asking for one,
+    // and scheduling one unasked is how an app ends up making a noise nobody wanted.
+    expect(result.current.enabled).toBe(false);
+    expect(reminders.scheduleReminder).not.toHaveBeenCalled();
+  });
+
+  it('goes on saying so while notifications are still off', async () => {
+    jest.spyOn(reminders, 'reminderState').mockResolvedValue('denied');
+    stored({ windDownEnabled: true, windDownTime: '22:30' });
+    const { result } = await setup();
+    await waitFor(() => expect(result.current.denied).toBe(true));
+
+    await act(async () => {
+      foreground();
+    });
+
+    expect(result.current.denied).toBe(true);
+  });
+
   it('ignores the app going away rather than coming back', async () => {
     stored({ windDownEnabled: true });
     await setup();
