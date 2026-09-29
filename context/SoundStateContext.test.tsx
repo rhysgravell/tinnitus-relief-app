@@ -148,6 +148,46 @@ describe('SoundStateProvider', () => {
     expect(value('saved')).toBe('true');
   });
 
+  it('does not let a refresh undo a star whose write landed inside it', async () => {
+    // The quiet half of the same race: the tap happens after the read was taken and its
+    // write finishes before the read comes back. Nothing is in flight by then, so an
+    // in-flight check alone would let a value fetched before the tap put the star back.
+    let answerRead = (states: store.SoundStates) => {
+      void states;
+    };
+    const read = jest.spyOn(store, 'getSoundStates').mockResolvedValue({});
+    jest.spyOn(store, 'toggleSaved').mockResolvedValue(true);
+
+    render(
+      <SoundStateProvider>
+        <Probe />
+      </SoundStateProvider>
+    );
+    await waitFor(() => expect(value('ready')).toBe('true'));
+
+    // The second read is held open, so the tap can happen inside it.
+    read.mockImplementation(
+      () =>
+        new Promise<store.SoundStates>((resolve) => {
+          answerRead = resolve;
+        })
+    );
+    fireEvent.press(screen.getByTestId('refresh'));
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(2));
+
+    // Tapped and written while that read is still in the air.
+    fireEvent.press(screen.getByTestId('toggle'));
+    await waitFor(() => expect(store.toggleSaved).toHaveBeenCalledWith('underwater'));
+    expect(value('saved')).toBe('true');
+
+    // And now the read answers, with what storage held before the tap.
+    await act(async () => {
+      answerRead({});
+    });
+
+    expect(value('saved')).toBe('true');
+  });
+
   it('carries the old favourites over before the first read', async () => {
     // The other way round and the first paint would show a returning user an empty list.
     const order: string[] = [];
