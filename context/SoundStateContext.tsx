@@ -70,6 +70,8 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
 
   /** Toggles whose write has not landed yet. Read by `refresh` — see below. */
   const writing = useRef(0);
+  /** Every toggle ever made here, counted. Also read by `refresh` — see below. */
+  const toggles = useRef(0);
 
   const toggleSaved = useCallback(async (id: string) => {
     // Flipped in memory first so the star answers the tap rather than the disk. The store
@@ -79,6 +81,7 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
       [id]: { ...DEFAULT_SOUND_STATE, ...current[id], saved: !current[id]?.saved },
     }));
     writing.current += 1;
+    toggles.current += 1;
     try {
       await persistSaved(id);
     } catch {
@@ -90,11 +93,17 @@ export function SoundStateProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refresh = useCallback(async () => {
+    const before = toggles.current;
     const stored = await getSoundStates();
     // A star tapped while this read was in the air is not in what came back, and the tap
     // is the newer truth of the two — so the read is dropped rather than allowed to undo
     // it. Whatever it would have brought arrives on the next focus instead.
-    if (writing.current > 0) return;
+    //
+    // Two things to notice, not one. A write still in flight is the obvious case; a tap
+    // whose write began and finished inside the read is the quiet one — nothing is in
+    // flight by the time the read lands, but the value it carries was fetched before the
+    // tap and would put the star back.
+    if (writing.current > 0 || toggles.current !== before) return;
     setStates(stored);
   }, []);
 
