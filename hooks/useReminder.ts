@@ -27,14 +27,6 @@ export type Reminder = {
 };
 
 /**
- * One of the daily reminders: the stored setting, and the OS-level schedule that has to
- * agree with it.
- *
- * The two can disagree in one direction only — the OS will not deliver what was stored —
- * and this hook resolves that by trusting the OS and putting the setting back, so what is
- * stored is always what will actually happen.
- */
-/**
  * Swallows a failure from the OS or from storage.
  *
  * Everything below runs off a tap that has already moved the switch, or off no tap at all,
@@ -44,6 +36,14 @@ export type Reminder = {
  */
 function ignoreFailure() {}
 
+/**
+ * One of the daily reminders: the stored setting, and the OS-level schedule that has to
+ * agree with it.
+ *
+ * The two can disagree in one direction only — the OS will not deliver what was stored —
+ * and this hook resolves that by trusting the OS and putting the setting back, so what is
+ * stored is always what will actually happen.
+ */
 export function useReminder(kind: ReminderKind): Reminder {
   const [enabled, setEnabled] = useState(false);
   const [at, setAt] = useState<TimeOfDay | null>(null);
@@ -60,9 +60,15 @@ export function useReminder(kind: ReminderKind): Reminder {
    * never coming, which is worse than a switch that is honestly off.
    */
   const reconcile = useCallback(
-    async (target: ReminderSetting) => {
-      // Nothing to check: an off reminder is not going to arrive, which is what it says.
-      if (!target.enabled) return;
+    async (target: ReminderSetting, sayingDenied = false) => {
+      if (!target.enabled) {
+        // An off reminder is not going to arrive, which is what it says — but if the row is
+        // blaming the OS for that, the blame has to be checked. Notifications are turned
+        // back on in the phone's settings, where nothing tells this app either, so the row
+        // would go on claiming they are off long after they were not.
+        if (sayingDenied && (await reminderState(kind)) !== 'denied') setDenied(false);
+        return;
+      }
 
       const state = await reminderState(kind);
       if (state === 'scheduled') return;
@@ -103,10 +109,10 @@ export function useReminder(kind: ReminderKind): Reminder {
     // for the life of the app, so a check on mount alone would be a check once a launch.
     const subscription = AppState.addEventListener('change', (state) => {
       if (state !== 'active' || at === null) return;
-      void reconcile({ enabled, at }).catch(ignoreFailure);
+      void reconcile({ enabled, at }, denied).catch(ignoreFailure);
     });
     return () => subscription.remove();
-  }, [at, enabled, reconcile]);
+  }, [at, denied, enabled, reconcile]);
 
   const apply = useCallback(
     (on: boolean, time: TimeOfDay | null) => {
