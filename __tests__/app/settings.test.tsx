@@ -295,6 +295,10 @@ describe('the night settings', () => {
 
     expect(value('Check-in reminder')).toBe('Off');
     expect(screen.getByText(/Notifications are off for this app/)).toBeTruthy();
+    // And says it to a screen reader too, which is handed the row's name and nothing else.
+    expect(row('Check-in reminder').props.accessibilityHint).toMatch(
+      /Notifications are off for this app/
+    );
   });
 
   it('leaves the other reminder alone when one is set', async () => {

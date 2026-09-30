@@ -70,6 +70,29 @@ describe('SettingsRow', () => {
     expect(button.props.accessibilityState).toMatchObject({ expanded: true });
   });
 
+  it('speaks the description of a row that opens something, which naming it would silence', () => {
+    // Naming a pressable flattens the text inside it, so the description has to ride along
+    // as a hint or it is not read at all.
+    renderRow({
+      title: 'Check-in reminder',
+      description: 'Notifications are off for this app, so there will be no reminder.',
+      value: 'Off',
+      onPress: () => {},
+    });
+    const button = screen.getByRole('button', { name: 'Check-in reminder' });
+
+    expect(button.props.accessibilityHint).toBe(
+      'Notifications are off for this app, so there will be no reminder.'
+    );
+  });
+
+  it('gives a row with nothing to explain no hint to read out', () => {
+    renderRow({ value: '45 min', onPress: () => {} });
+    const button = screen.getByRole('button', { name: 'Default timer' });
+
+    expect(button.props.accessibilityHint).toBeUndefined();
+  });
+
   it('reads an abbreviated value out in full', () => {
     // "45 min" is read as "45 min"; the spoken form says minutes.
     renderRow({ value: '45 min', valueAccessibilityLabel: '45 minutes', onPress: () => {} });
