@@ -13,6 +13,8 @@ type Props = {
   spokenTime: string;
   /** How long tonight's session will run, and what it will play. */
   summary: string;
+  /** The same line as it should be spoken. Composed by `tonightSpokenSummary`. */
+  spokenSummary: string;
   reminderOn: boolean;
   onReminderChange: (on: boolean) => void;
   /** Shown in place of the summary when the OS has refused notifications. */
@@ -32,6 +34,7 @@ export function TonightCard({
   time,
   spokenTime,
   summary,
+  spokenSummary,
   reminderOn,
   onReminderChange,
   denied = false,
@@ -50,7 +53,15 @@ export function TonightCard({
             variant="cardTitleHero"
             accessibilityLabel={`Wind-down at ${spokenTime}`}
           >{`Wind-down at ${time}`}</Text>
-          <Text variant="bodySecondary" tone="muted" style={styles.summary}>
+          {/* "45 min · Underwater" is read out as forty-five metres and then nothing where
+              the dot is, so the spoken line says the words. The denial is already a
+              sentence, and reads as written. */}
+          <Text
+            variant="bodySecondary"
+            tone="muted"
+            style={styles.summary}
+            accessibilityLabel={denied ? undefined : spokenSummary}
+          >
             {denied
               ? 'Notifications are off for this app, so there will be no reminder.'
               : summary}
