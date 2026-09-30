@@ -4,7 +4,7 @@ import { SavedStar } from './SavedStar';
 import { Text } from './Text';
 import { useTheme } from '../theme/ThemeProvider';
 import { SPACE } from '../theme/tokens';
-import { isPlayable } from '../store/sounds';
+import { isPlayable, spokenDescriptor } from '../store/sounds';
 import type { Sound } from '../store/sounds';
 
 /** The artwork strip's height. The card's own width comes from the grid. */
@@ -38,6 +38,9 @@ export function SoundCard({ sound, saved, onPress, onToggleSaved }: Props) {
       accessibilityRole="button"
       accessibilityState={{ disabled: !available }}
       accessibilityLabel={sound.name}
+      // Naming the card flattens the text inside it, so the second line would otherwise not
+      // be read at all: neither the descriptor the design leads on, nor "Coming soon".
+      accessibilityHint={spokenDescriptor(sound)}
       style={({ pressed }) => [pressed && styles.pressed, !available && styles.unavailable]}
     >
       <Card padding={0} clip>

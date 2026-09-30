@@ -1,4 +1,18 @@
-import { findSound, isPlayable, SOUND_FILTERS, SOUNDS, soundsInCategory } from './sounds';
+import {
+  findSound,
+  isPlayable,
+  SOUND_FILTERS,
+  SOUNDS,
+  soundsInCategory,
+  spokenDescriptor,
+} from './sounds';
+import type { Sound } from './sounds';
+
+function sound(id: string): Sound {
+  const found = findSound(id);
+  if (!found) throw new Error(`${id} is not in the catalogue`);
+  return found;
+}
 
 describe('sound catalogue', () => {
   it('gives every sound a unique id', () => {
@@ -43,6 +57,32 @@ describe('sound catalogue', () => {
   it('treats a sound as playable exactly when it has audio', () => {
     for (const sound of SOUNDS) {
       expect(isPlayable(sound)).toBe(sound.file !== null);
+    }
+  });
+});
+
+describe('spokenDescriptor', () => {
+  it('pauses where the middle dot is, since it is read as nothing at all', () => {
+    expect(spokenDescriptor(sound('underwater'))).toBe('Low-pass, deep');
+  });
+
+  it('leaves no middle dot in any descriptor the catalogue ships', () => {
+    // Derived rather than authored, so a sound added later is covered by this on arrival.
+    for (const entry of SOUNDS) {
+      expect(spokenDescriptor(entry)).not.toContain('·');
+      expect(spokenDescriptor(entry)).not.toBe('');
+    }
+  });
+
+  it('says why a sound cannot be played, where the card only says when', () => {
+    // `rain-on-canvas` ships with artwork but no audio file, and reads "Coming soon".
+    expect(spokenDescriptor(sound('rain-on-canvas'))).toBe('No recording for this one yet');
+  });
+
+  it('describes a sound only while there is something to hear', () => {
+    for (const entry of SOUNDS) {
+      const describesTheSound = spokenDescriptor(entry) !== 'No recording for this one yet';
+      expect(describesTheSound).toBe(isPlayable(entry));
     }
   });
 });

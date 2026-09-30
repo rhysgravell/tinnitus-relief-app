@@ -64,6 +64,12 @@ describe('SoundCard', () => {
     expect(card(playable).props.accessibilityLabel).toBe('Underwater');
   });
 
+  it('speaks the descriptor, which naming the card would otherwise silence', () => {
+    // The name is the card's accessible name, so everything inside it is read through this.
+    renderCard(playable);
+    expect(card(playable).props.accessibilityHint).toBe('Low-pass, deep');
+  });
+
   it('lifts the star above the artwork rather than beside it', () => {
     renderCard(playable);
     expect(
@@ -76,6 +82,9 @@ describe('SoundCard', () => {
     renderCard(unplayable);
     expect(screen.getByText('Coming soon')).toBeTruthy();
     expect(screen.queryByText(unplayable.descriptor)).toBeNull();
+    // And says as much to a screen reader, which would otherwise meet a dimmed button with
+    // no reason given for it.
+    expect(card(unplayable).props.accessibilityHint).toBe('No recording for this one yet');
   });
 
   it('does not open a sound that cannot play', () => {

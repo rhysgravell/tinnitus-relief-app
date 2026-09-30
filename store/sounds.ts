@@ -89,3 +89,19 @@ export function soundsInCategory(category: SoundCategory | 'all'): Sound[] {
 export function isPlayable(sound: Sound): boolean {
   return sound.file !== null;
 }
+
+/**
+ * What a card's second line says out loud. The card takes the sound's name as its accessible
+ * name, which flattens the text inside it, so this rides along as a hint — the arrangement
+ * the saved rows already use for their meta line.
+ *
+ * Derived from the visible descriptor rather than written out beside it: the middle dot is
+ * read as nothing at all, and a spoken copy in the catalogue would be one more thing to
+ * forget when a sound is added. A sound with no recording says why instead, in the words the
+ * session screen uses — "Coming soon" says when, not what, and a dimmed card with no reason
+ * given reads as broken.
+ */
+export function spokenDescriptor(sound: Sound): string {
+  if (!isPlayable(sound)) return 'No recording for this one yet';
+  return sound.descriptor.replace(/\s*·\s*/g, ', ');
+}
