@@ -18,7 +18,7 @@ import { useReminder } from '../../hooks/useReminder';
 import { ThemeProvider } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
 import { ROUTINE } from '../../store/routine';
-import { tonightSound, tonightSummary } from '../../store/tonight';
+import { tonightSound, tonightSpokenSummary, tonightSummary } from '../../store/tonight';
 import { formatTimeOfDay, spokenTimeOfDay } from '../../utils/time';
 
 /** The night gradient stops higher up this screen than on the session. */
@@ -71,6 +71,7 @@ function Sleep() {
               time={formatTimeOfDay(at)}
               spokenTime={spokenTimeOfDay(at)}
               summary={tonightSummary(sound, settings.defaultTimerMinutes)}
+              spokenSummary={tonightSpokenSummary(sound, settings.defaultTimerMinutes)}
               reminderOn={windDown.enabled}
               onReminderChange={windDown.setEnabled}
               denied={windDown.denied}

@@ -1,6 +1,6 @@
 import { DEFAULT_SOUND_STATE } from './soundState';
 import type { SoundState, SoundStates } from './soundState';
-import { tonightSound, tonightSummary } from './tonight';
+import { tonightSound, tonightSpokenSummary, tonightSummary } from './tonight';
 import { findSound } from './sounds';
 import type { Session } from './sessions';
 
@@ -68,5 +68,24 @@ describe('tonightSummary', () => {
 
   it('says so when there is nothing to play', () => {
     expect(tonightSummary(undefined, 45)).toBe('No sounds available to play');
+  });
+});
+
+describe('tonightSpokenSummary', () => {
+  it('says minutes in full rather than leaving "min" to be read as metres', () => {
+    expect(tonightSpokenSummary(sound('underwater'), 45)).toBe('45 minutes, Underwater');
+  });
+
+  it('pauses on a comma, since the middle dot is read as nothing at all', () => {
+    expect(tonightSpokenSummary(sound('underwater'), 45)).not.toContain('·');
+  });
+
+  it('says there is no timer, same as the line on screen', () => {
+    expect(tonightSpokenSummary(sound('underwater'), null)).toBe('No timer, Underwater');
+  });
+
+  it('is the same sentence as on screen when there is nothing to play', () => {
+    // Prose already, so there is nothing to say differently.
+    expect(tonightSpokenSummary(undefined, 45)).toBe(tonightSummary(undefined, 45));
   });
 });

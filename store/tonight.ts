@@ -1,4 +1,5 @@
 import { savedSounds } from './saved';
+import { timerAccessibilityLabel, timerSettingLabel } from './settings';
 import { SOUNDS, findSound, isPlayable } from './sounds';
 import type { Sound } from './sounds';
 import type { Session } from './sessions';
@@ -29,7 +30,30 @@ export function tonightSound(session: Session | null, states: SoundStates): Soun
  * describes a session that has not started yet, and that is the length it will open at.
  */
 export function tonightSummary(sound: Sound | undefined, timerMinutes: number | null): string {
+  return composeSummary(sound, timerSettingLabel(timerMinutes), ' · ');
+}
+
+/**
+ * The same line for a screen reader, which says "45 min" as forty-five metres and reads the
+ * middle dot as nothing at all — so whole words, and a comma to pause on.
+ */
+export function tonightSpokenSummary(
+  sound: Sound | undefined,
+  timerMinutes: number | null
+): string {
+  return composeSummary(sound, timerAccessibilityLabel(timerMinutes), ', ');
+}
+
+/**
+ * Both readings of the line, so the wording can only ever differ in the timer and the
+ * separator — the two things a screen reader needs said differently.
+ */
+function composeSummary(
+  sound: Sound | undefined,
+  length: string,
+  separator: string
+): string {
+  // Prose either way, so there is nothing here to say differently.
   if (!sound) return 'No sounds available to play';
-  const length = timerMinutes === null ? 'No timer' : `${timerMinutes} min`;
-  return `${length} · ${sound.name}`;
+  return `${length}${separator}${sound.name}`;
 }

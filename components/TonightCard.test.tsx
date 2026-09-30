@@ -12,6 +12,7 @@ function renderCard(props: Partial<Parameters<typeof TonightCard>[0]> = {}) {
         time="22:30"
         spokenTime="10:30 pm"
         summary="45 min · Underwater"
+        spokenSummary="45 minutes, Underwater"
         reminderOn={false}
         onReminderChange={onReminderChange}
         onStart={onStart}
@@ -53,6 +54,12 @@ describe('TonightCard', () => {
     expect(screen.getByText('Wind-down at 22:30')).toBeTruthy();
   });
 
+  it('speaks the summary in words, while showing the abbreviation the design draws', () => {
+    renderCard();
+    expect(screen.getByLabelText('45 minutes, Underwater')).toBeTruthy();
+    expect(screen.getByText('45 min · Underwater')).toBeTruthy();
+  });
+
   it('reports the reminder as off until it is on', () => {
     renderCard();
     expect(reminder().props.accessibilityState).toMatchObject({ checked: false });
@@ -83,5 +90,8 @@ describe('TonightCard', () => {
     renderCard({ denied: true });
     expect(screen.getByText(/Notifications are off for this app/)).toBeTruthy();
     expect(screen.queryByText('45 min · Underwater')).toBeNull();
+    // And the spoken summary goes with it, rather than reading out a session the reminder
+    // is not going to start.
+    expect(screen.queryByLabelText('45 minutes, Underwater')).toBeNull();
   });
 });
