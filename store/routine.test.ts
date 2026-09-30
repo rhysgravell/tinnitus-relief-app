@@ -31,6 +31,26 @@ describe('the wind-down routine', () => {
     expect(breathing?.title).toContain(`${BREATHING_MINUTES} min`);
   });
 
+  it('says that length in full for a screen reader, which reads "min" as metres', () => {
+    const breathing = ROUTINE.find((step) => step.action === 'breathing');
+    expect(breathing?.spokenTitle).toBe(`Slow breathing, ${BREATHING_MINUTES} minutes`);
+  });
+
+  it('gives a spoken title to every step whose own abbreviates, and no others', () => {
+    // The rule rather than the string: a step added later with "· 10 min" in its title
+    // fails here until it is given something to say.
+    for (const step of ROUTINE) {
+      const abbreviates = step.title.includes('·') || /\d+\s*min\b/.test(step.title);
+      if (!abbreviates) {
+        expect(step.spokenTitle).toBeUndefined();
+        continue;
+      }
+      expect(step.spokenTitle).toBeDefined();
+      expect(step.spokenTitle).not.toContain('·');
+      expect(step.spokenTitle).not.toMatch(/\d+\s*min\b/);
+    }
+  });
+
   it('carries no emoji', () => {
     // The redesign replaced them with numerals throughout.
     const text = ROUTINE.map((step) => `${step.title} ${step.detail}`).join(' ');

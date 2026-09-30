@@ -19,11 +19,31 @@ function row() {
   return screen.getByTestId(`routine-step-${step.id}`);
 }
 
+function breathingStep() {
+  const found = ROUTINE.find((entry) => entry.action === 'breathing');
+  if (!found) throw new Error('the routine has no breathing step');
+  return found;
+}
+
 describe('RoutineStep', () => {
   it('gives the instruction and the reason for it', () => {
     renderStep();
     expect(screen.getByText(step.title)).toBeTruthy();
     expect(screen.getByText(step.detail)).toBeTruthy();
+  });
+
+  it('speaks an abbreviated title in words, while showing the abbreviation the design draws', () => {
+    const breathing = breathingStep();
+    renderStep({ step: breathing });
+    expect(screen.getByLabelText('Slow breathing, 4 minutes')).toBeTruthy();
+    expect(screen.getByText(breathing.title)).toBeTruthy();
+  });
+
+  it('lets a title that needs no spoken variant be read as it is written', () => {
+    // Three of the four steps are whole words already; a label of their own would only be
+    // a second copy to drift.
+    renderStep();
+    expect(screen.getByText(step.title).props.accessibilityLabel).toBeUndefined();
   });
 
   it('numbers the step rather than illustrating it', () => {
