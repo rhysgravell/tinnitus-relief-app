@@ -43,7 +43,11 @@ export function RoutineStep({ step, position, divider = true, action }: Props) {
         </Text>
       </View>
       <View style={styles.body}>
-        <Text variant="rowTitle">{step.title}</Text>
+        {/* Only the breathing step carries a spoken title; the rest are whole words already,
+            and undefined leaves the reader with the text on screen. */}
+        <Text variant="rowTitle" accessibilityLabel={step.spokenTitle}>
+          {step.title}
+        </Text>
         <Text variant="bodySecondary" tone="muted" style={styles.detail}>
           {step.detail}
         </Text>

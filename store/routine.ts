@@ -9,6 +9,11 @@
 export type RoutineStep = {
   id: string;
   title: string;
+  /**
+   * The title as it should be spoken, for a step whose own abbreviates. Absent on the three
+   * that are already whole words, where the visible title reads as written.
+   */
+  spokenTitle?: string;
   detail: string;
   /** The step the app performs rather than describes. Only the breathing one has it. */
   action?: 'breathing';
@@ -16,6 +21,15 @@ export type RoutineStep = {
 
 /** How long the guided breathing runs for, in minutes. Named in step three's title. */
 export const BREATHING_MINUTES = 4;
+
+/**
+ * Step three's title, in whichever reading is asked for. Composed rather than written out
+ * twice so the two can only ever differ in the length and the separator — and so the
+ * minutes cannot drift apart from `BREATHING_MINUTES`.
+ */
+function breathingTitle(length: string, separator: string): string {
+  return `Slow breathing${separator}${length}`;
+}
 
 export const ROUTINE: readonly RoutineStep[] = [
   {
@@ -30,7 +44,10 @@ export const ROUTINE: readonly RoutineStep[] = [
   },
   {
     id: 'slow-breathing',
-    title: `Slow breathing · ${BREATHING_MINUTES} min`,
+    title: breathingTitle(`${BREATHING_MINUTES} min`, ' · '),
+    // A screen reader says "4 min" as four metres and reads the middle dot as nothing at
+    // all, so the spoken title says whole words and pauses on a comma.
+    spokenTitle: breathingTitle(`${BREATHING_MINUTES} minutes`, ', '),
     detail: 'Guided, with your sound still playing underneath.',
     action: 'breathing',
   },
