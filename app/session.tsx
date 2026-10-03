@@ -16,7 +16,7 @@ import { useSoundStates } from '../context/SoundStateContext';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
 import { findSound } from '../store/sounds';
-import { formatClock } from '../utils/duration';
+import { formatClock, spokenClock } from '../utils/duration';
 
 /** The session insets wider than the tab screens do, as the design draws it. */
 const GUTTER = SPACE.s24;
@@ -114,13 +114,21 @@ function Session() {
           <>
             <View style={styles.stage}>
               <BreathingRings size={RING_SIZE}>
-                <Text
-                  variant="readout"
-                  accessibilityLabel={`${formatClock(elapsedSeconds)} played`}
-                >
+                {/* The clock face is digits, and digits either side of a colon are read out
+                    as themselves — or as a time of day. Both readouts say their span in
+                    units instead. "No timer" is a phrase already, and reads as written. */}
+                <Text variant="readout" accessibilityLabel={`${spokenClock(elapsedSeconds)} played`}>
                   {formatClock(elapsedSeconds)}
                 </Text>
-                <SectionLabel tone="primary" style={styles.remaining}>
+                <SectionLabel
+                  tone="primary"
+                  style={styles.remaining}
+                  accessibilityLabel={
+                    remainingSeconds === null
+                      ? undefined
+                      : `${spokenClock(remainingSeconds)} left`
+                  }
+                >
                   {remainingSeconds === null ? 'No timer' : `${formatClock(remainingSeconds)} left`}
                 </SectionLabel>
               </BreathingRings>

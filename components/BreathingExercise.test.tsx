@@ -85,6 +85,14 @@ describe('BreathingExercise', () => {
     expect(screen.getByText('2:30')).toBeTruthy();
   });
 
+  it('reads the countdown out as a span, the same as the session does', () => {
+    renderExercise();
+    expect(screen.getByLabelText('4 minutes left')).toBeTruthy();
+
+    advance(90 * TICK);
+    expect(screen.getByLabelText('2 minutes, 30 seconds left')).toBeTruthy();
+  });
+
   it('stops itself at the end rather than looping forever', () => {
     renderExercise();
     advance(BREATHING_MINUTES * 60 * TICK);

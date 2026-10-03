@@ -13,7 +13,7 @@ import { LAYOUT, SPACE } from '../theme/tokens';
 import { BREATHING_MINUTES } from '../store/routine';
 import { breathAt } from '../utils/breathing';
 import type { BreathDirection } from '../utils/breathing';
-import { formatClock } from '../utils/duration';
+import { formatClock, spokenClock } from '../utils/duration';
 
 /** The circle at its fullest, in points. */
 const CIRCLE_SIZE = 200;
@@ -71,7 +71,13 @@ function Exercise({ onClose, soundPlaying }: { onClose: () => void; soundPlaying
       <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
         <View style={styles.header}>
           <SectionLabel tone="muted">Slow breathing</SectionLabel>
-          <Text variant="monoCaption" tone="faint">
+          {/* Same as the session's readouts: a clock face is read out as its digits, so
+              the span is said in units. */}
+          <Text
+            variant="monoCaption"
+            tone="faint"
+            accessibilityLabel={`${spokenClock(remainingSeconds ?? 0)} left`}
+          >
             {formatClock(remainingSeconds ?? 0)}
           </Text>
         </View>
