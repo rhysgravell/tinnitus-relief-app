@@ -92,6 +92,11 @@ export function SettingsRow({
           // Named and valued explicitly: the row's own text would otherwise be read out
           // with the chevron on the end of it.
           accessibilityLabel={title}
+          // Naming the row also flattens it, which would otherwise swallow the description
+          // whole — and that line is the whole reason a non-obvious row has one. A row with
+          // a switch instead of an `onPress` is not a button, so its description is read
+          // where it sits.
+          accessibilityHint={description}
           accessibilityValue={
             value === undefined ? undefined : { text: valueAccessibilityLabel ?? value }
           }
