@@ -158,6 +158,23 @@ describe('Session screen', () => {
     expect(screen.getByText('43:30 left')).toBeTruthy();
   });
 
+  it('reads both readouts out as spans, not as clock faces', async () => {
+    // "1:30" and "43:30 left" are digits either side of a colon, which a screen reader
+    // says as themselves or as a time of day.
+    await renderSession();
+    advance(90 * 1000);
+
+    expect(screen.getByLabelText('1 minute, 30 seconds played')).toBeTruthy();
+    expect(screen.getByLabelText('43 minutes, 30 seconds left')).toBeTruthy();
+  });
+
+  it('leaves "No timer" to be read as the phrase it already is', async () => {
+    await renderSession();
+    fireEvent.press(screen.getByRole('button', { name: 'No timer' }));
+
+    expect(screen.getByText('No timer').props.accessibilityLabel).toBeUndefined();
+  });
+
   it('pauses the sound and holds the clock where it was', async () => {
     await renderSession();
     advance(30 * 1000);
