@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import { useTheme } from '../theme/ThemeProvider';
 import { LOUDNESS_HEIGHTS, SPACE } from '../theme/tokens';
-import { LOUDNESS_ENDS, LOUDNESS_LEVELS } from '../store/checkIns';
+import { LOUDNESS_ENDS, LOUDNESS_LEVELS, loudnessLabel } from '../store/checkIns';
 import type { Loudness } from '../store/checkIns';
 
 /** The height of the row the bars stand in. */
@@ -32,7 +32,9 @@ export function LoudnessScale({ value, onChange }: Props) {
             onPress={() => onChange(level)}
             accessibilityRole="button"
             accessibilityState={{ selected: value === level }}
-            accessibilityLabel={`Level ${level} of ${LOUDNESS_LEVELS.length}`}
+            // The end bars name themselves: the rising shape and the two words below it are
+            // what say which end is which, and neither is available to a screen reader.
+            accessibilityLabel={loudnessLabel(level)}
             // The bar itself is 13 to 49pt tall, so the target is the full-height column it
             // sits at the bottom of. That clears 44pt without a hitSlop overlapping its
             // neighbours, which would make the short bars unpickable.

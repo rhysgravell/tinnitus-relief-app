@@ -138,7 +138,7 @@ describe('Check-in screen', () => {
     await renderScreen();
 
     expect(screen.getByText('Saved')).toBeTruthy();
-    fireEvent.press(screen.getByLabelText('Level 5 of 5'));
+    fireEvent.press(screen.getByLabelText('Level 5 of 5, Overwhelming'));
     expect(screen.getByText('Update today')).toBeTruthy();
   });
 
