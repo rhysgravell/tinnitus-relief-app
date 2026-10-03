@@ -26,6 +26,27 @@ export const LOUDNESS_LEVELS: readonly Loudness[] = [1, 2, 3, 4, 5];
  */
 export const LOUDNESS_ENDS = { low: 'Barely there', high: 'Overwhelming' } as const;
 
+/**
+ * What a bar on the scale is read out as.
+ *
+ * The row of rising bars is what tells a sighted user which end is which, and the two words
+ * sit underneath it as loose text — neither of which reaches a screen reader, which was
+ * offered five numbered buttons and no direction. So the end bars carry their own word.
+ *
+ * The middle three stay numbers, for the same reason only the ends are named on screen: a
+ * word for someone's own tinnitus is theirs to pick, and the ends are there to set the range
+ * rather than to label the answer.
+ */
+export function loudnessLabel(level: Loudness): string {
+  const position = `Level ${level} of ${LOUDNESS_LEVELS.length}`;
+  // The words exactly as they are drawn, rather than a spoken copy of them to keep in step.
+  if (level === LOUDNESS_LEVELS[0]) return `${position}, ${LOUDNESS_ENDS.low}`;
+  if (level === LOUDNESS_LEVELS[LOUDNESS_LEVELS.length - 1]) {
+    return `${position}, ${LOUDNESS_ENDS.high}`;
+  }
+  return position;
+}
+
 export type CheckIn = {
   /** "YYYY-MM-DD" local date. One check-in per day. */
   date: string;

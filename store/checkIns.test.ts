@@ -3,7 +3,9 @@ import {
   draftStatus,
   EMPTY_DRAFT,
   getCheckIns,
+  LOUDNESS_ENDS,
   LOUDNESS_LEVELS,
+  loudnessLabel,
   MOOD_OPTIONS,
   saveCheckIn,
   nightDate,
@@ -95,6 +97,35 @@ describe('mood options', () => {
 describe('the loudness scale', () => {
   it('runs from one to five', () => {
     expect(LOUDNESS_LEVELS).toEqual([1, 2, 3, 4, 5]);
+  });
+
+  it('gives every level its position in the scale', () => {
+    // Without this a bar is a button with a number and no range to put it in.
+    for (const level of LOUDNESS_LEVELS) {
+      expect(loudnessLabel(level)).toContain(`Level ${level} of 5`);
+    }
+  });
+
+  it('names the quiet end with the words drawn under it', () => {
+    expect(loudnessLabel(1)).toBe(`Level 1 of 5, ${LOUDNESS_ENDS.low}`);
+  });
+
+  it('names the loud end with the words drawn under it', () => {
+    expect(loudnessLabel(5)).toBe(`Level 5 of 5, ${LOUDNESS_ENDS.high}`);
+  });
+
+  it('leaves the middle of the scale unnamed, as the screen does', () => {
+    // Naming all five would ask the user to accept a word for their own tinnitus. The ends
+    // are there to set the range, not to label the answer.
+    for (const level of [2, 3, 4] as const) {
+      expect(loudnessLabel(level)).toBe(`Level ${level} of 5`);
+    }
+  });
+
+  it('names the first and last levels whatever the scale is, and no others', () => {
+    // Derived rather than listed, so a scale that grew a level keeps naming its two ends.
+    const named = LOUDNESS_LEVELS.filter((level) => loudnessLabel(level).includes(','));
+    expect(named).toEqual([LOUDNESS_LEVELS[0], LOUDNESS_LEVELS[LOUDNESS_LEVELS.length - 1]]);
   });
 });
 

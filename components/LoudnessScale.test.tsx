@@ -36,6 +36,19 @@ describe('LoudnessScale', () => {
     expect(screen.getByText('Overwhelming')).toBeTruthy();
   });
 
+  it('reads the ends out with their words, which are loose text beside the bars', () => {
+    // The rising shape is what tells a sighted user which end is which. A screen reader is
+    // offered five numbered buttons, so the end bars say the word themselves.
+    renderScale();
+    expect(screen.getByLabelText('Level 1 of 5, Barely there')).toBeTruthy();
+    expect(screen.getByLabelText('Level 5 of 5, Overwhelming')).toBeTruthy();
+  });
+
+  it('reads the middle of the scale out as a position and nothing more', () => {
+    renderScale();
+    expect(screen.getByLabelText('Level 3 of 5')).toBeTruthy();
+  });
+
   it('rises from left to right', () => {
     renderScale();
     const heights = [1, 2, 3, 4, 5].map((level) => barStyle(level as Loudness).height);
@@ -70,7 +83,9 @@ describe('LoudnessScale', () => {
   it('gives the short bars a target the full height of the row', () => {
     // Level 1 draws 13pt tall. Tapping only the ink would put it under the 44pt minimum.
     renderScale();
-    const column = StyleSheet.flatten(screen.getByLabelText('Level 1 of 5').props.style);
+    const column = StyleSheet.flatten(
+      screen.getByLabelText('Level 1 of 5, Barely there').props.style
+    );
     expect(column.height).toBe('100%');
     expect(column.justifyContent).toBe('flex-end');
   });
