@@ -149,7 +149,15 @@ export default function SettingsRoute() {
           </>
         ) : null}
 
-        <Text variant="meta" tone="faint" style={styles.footer}>
+        {/* The dot between the build and the disclaimer is read as nothing, running the two
+            together into one sentence. A comma to pause on, and the disclaimer alone needs
+            nothing — it is the whole line. */}
+        <Text
+          variant="meta"
+          tone="faint"
+          style={styles.footer}
+          accessibilityLabel={name && version ? `${name} ${version}, ${DISCLAIMER}` : undefined}
+        >
           {name && version ? `${name} ${version} · ${DISCLAIMER}` : DISCLAIMER}
         </Text>
       </ScrollView>

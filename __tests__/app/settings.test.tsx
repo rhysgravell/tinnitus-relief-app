@@ -119,13 +119,22 @@ describe('Settings screen', () => {
     expect(screen.getByText('Quiet 1.4.0 · Not a medical device')).toBeTruthy();
   });
 
+  it('pauses where the dot is when the footer is read out', async () => {
+    // The dot is read as nothing, which runs the build into the disclaimer.
+    await renderScreen();
+    expect(screen.getByLabelText('Quiet 1.4.0, Not a medical device')).toBeTruthy();
+  });
+
   it('still says what the app is not where there is no config to read', async () => {
     // The disclaimer is the part that is not optional, so it stands alone rather than
     // going missing with the name and the version.
     jest.replaceProperty(Constants, 'expoConfig', null);
     await renderScreen();
 
-    expect(screen.getByText('Not a medical device')).toBeTruthy();
+    const footer = screen.getByText('Not a medical device');
+    expect(footer).toBeTruthy();
+    // Nothing to pause before, so the line reads as written rather than carrying a label.
+    expect(footer.props.accessibilityLabel).toBeUndefined();
   });
 });
 

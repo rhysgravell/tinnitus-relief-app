@@ -138,6 +138,11 @@ describe('Session screen', () => {
     expect(screen.getByText('Low-pass · deep')).toBeTruthy();
   });
 
+  it('reads the descriptor out with a pause where the dot is, as the cards do', async () => {
+    await renderSession();
+    expect(screen.getByLabelText('Low-pass, deep')).toBeTruthy();
+  });
+
   it('starts playing as soon as it opens', async () => {
     await renderSession();
     expect(player.play).toHaveBeenCalled();
@@ -470,6 +475,11 @@ describe('Session screen', () => {
 
     expect(screen.getByText('Rain on canvas')).toBeTruthy();
     expect(screen.getByText('No recording for this one yet')).toBeTruthy();
+    // And that sentence reads as written: `silent` also covers a player that could not be
+    // made, so a spoken descriptor here could contradict the line on screen.
+    expect(
+      screen.getByText('No recording for this one yet').props.accessibilityLabel
+    ).toBeUndefined();
     expect(transport().props.accessibilityState).toMatchObject({ disabled: true });
     expect(transport().props.accessibilityLabel).toBe('Play');
     expect(createAudioPlayer).not.toHaveBeenCalled();
