@@ -15,7 +15,7 @@ import { usePlayback } from '../context/PlaybackContext';
 import { useSoundStates } from '../context/SoundStateContext';
 import { ThemeProvider, useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
-import { findSound } from '../store/sounds';
+import { findSound, spokenDescriptor } from '../store/sounds';
 import { formatClock, spokenClock } from '../utils/duration';
 
 /** The session insets wider than the tab screens do, as the design draws it. */
@@ -135,7 +135,17 @@ function Session() {
 
               <View style={styles.naming}>
                 <Text variant="sessionTitle">{sound.name}</Text>
-                <Text variant="bodySecondary" tone="muted" style={styles.descriptor}>
+                {/* The descriptor's middle dot is read as nothing at all, which runs its two
+                    halves together — so the cards' spoken reading is used here too. The
+                    silent line is a sentence already, and `silent` covers a player that
+                    could not be made as well as a missing recording, so it is left to read
+                    as written rather than labelled with a descriptor it contradicts. */}
+                <Text
+                  variant="bodySecondary"
+                  tone="muted"
+                  style={styles.descriptor}
+                  accessibilityLabel={silent ? undefined : spokenDescriptor(sound)}
+                >
                   {silent ? 'No recording for this one yet' : sound.descriptor}
                 </Text>
               </View>
