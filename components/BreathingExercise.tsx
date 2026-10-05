@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, Modal, StyleSheet, Text as RNText, View } from 'react-native';
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  Modal,
+  StyleSheet,
+  Text as RNText,
+  View,
+} from 'react-native';
 import type { ReactNode } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScreenBackground } from './ScreenBackground';
@@ -22,6 +30,9 @@ const CIRCLE_SIZE = 200;
 const CONTRACTED = 0.62;
 
 const EXPANDED = 1;
+
+/** The caption once the time is up. Held here so both readings of it say the same thing. */
+const FINISHED = "That's four minutes";
 
 type Props = {
   visible: boolean;
@@ -66,6 +77,23 @@ function Exercise({ onClose, soundPlaying }: { onClose: () => void; soundPlaying
 
   const { phase, secondsRemaining } = breathAt(elapsedSeconds);
 
+  /**
+   * The instruction, as a screen reader gets it. The circle is the only thing that says
+   * when to breathe and it says it by moving, so the phase has to be spoken as it turns
+   * over or there is no exercise here at all. Its length comes along with it: the count
+   * inside the circle is a digit changing every second, which no reader will read again.
+   */
+  const instruction = finished ? FINISHED : `${phase.label} for ${spokenClock(phase.seconds)}`;
+
+  useEffect(() => {
+    // Announced rather than left to `accessibilityLiveRegion`, which is Android-only — an
+    // exercise that spoke up on one platform and not the other would be worse than one
+    // that never did. A no-op when no reader is running.
+    AccessibilityInfo.announceForAccessibility(instruction);
+    // Consecutive phases never share a label, so this fires once as each one begins and
+    // not again while it runs.
+  }, [instruction]);
+
   return (
     <ScreenBackground>
       <SafeAreaView edges={['top', 'bottom']} style={styles.screen}>
@@ -90,7 +118,9 @@ function Exercise({ onClose, soundPlaying }: { onClose: () => void; soundPlaying
           </Breath>
 
           <View style={styles.caption}>
-            <Text variant="sessionTitle">{finished ? "That's four minutes" : phase.label}</Text>
+            {/* Reads as written: these are whole words already, and the spoken reading is
+                the announcement above rather than a label on a line nobody is focused on. */}
+            <Text variant="sessionTitle">{finished ? FINISHED : phase.label}</Text>
             <Text variant="bodySecondary" tone="muted" style={styles.hint}>
               {finished
                 ? 'Carry the same rhythm into bed with you.'

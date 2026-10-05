@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { BreathingExercise } from './BreathingExercise';
 import { BREATHING_MINUTES } from '../store/routine';
+import { BREATHING_PHASES, CYCLE_SECONDS } from '../utils/breathing';
 
 const onClose = jest.fn();
 
@@ -26,13 +28,22 @@ function renderExercise(visible = true, soundPlaying = true) {
   );
 }
 
+/** Everything said to a screen reader since the exercise opened, in order. */
+function announced(): string[] {
+  return jest.mocked(AccessibilityInfo.announceForAccessibility).mock.calls.map(([said]) => said);
+}
+
 beforeEach(() => {
   jest.useFakeTimers();
   jest.clearAllMocks();
+  jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
 });
 
 afterEach(() => {
   jest.useRealTimers();
+  // The spy above is laid on a shared module, so it comes off between tests rather than
+  // being wrapped again by the next one.
+  jest.restoreAllMocks();
 });
 
 describe('BreathingExercise', () => {
@@ -91,6 +102,46 @@ describe('BreathingExercise', () => {
 
     advance(90 * TICK);
     expect(screen.getByLabelText('2 minutes, 30 seconds left')).toBeTruthy();
+  });
+
+  it('speaks the first instruction as it opens', () => {
+    // The circle says when to breathe by moving, which is nothing to a screen reader. The
+    // length comes with the phase because the count inside the circle is a digit.
+    renderExercise();
+    expect(announced()).toEqual(['Breathe in for 4 seconds']);
+  });
+
+  it('says nothing new while a phase is still running', () => {
+    // Every second redraws the count, and an instruction repeated four times over would
+    // talk straight through the breath it was asking for.
+    renderExercise();
+    advance(3 * TICK);
+
+    expect(screen.getByText('1')).toBeTruthy();
+    expect(announced()).toEqual(['Breathe in for 4 seconds']);
+  });
+
+  it('speaks every phase in the pattern as it begins, whatever the pattern is', () => {
+    // Derived from the phases rather than listed, so a pattern that gained a phase is
+    // still spoken in full. The seconds are written out rather than run back through the
+    // formatter, so this says what is actually heard.
+    renderExercise();
+    // A second at a time, not one leap: `advance` jumps the clock and fires a single tick,
+    // which would land past three of the four phases without ever drawing them.
+    for (let second = 1; second < CYCLE_SECONDS; second += 1) advance(TICK);
+
+    expect(announced()).toEqual(
+      BREATHING_PHASES.map(({ label, seconds }) => `${label} for ${seconds} seconds`)
+    );
+  });
+
+  it('says when the four minutes are up', () => {
+    // The circle stops moving and the count empties — neither of which is announced, so
+    // the end of the exercise would otherwise just be a silence that never broke.
+    renderExercise();
+    advance(BREATHING_MINUTES * 60 * TICK);
+
+    expect(announced().at(-1)).toBe("That's four minutes");
   });
 
   it('stops itself at the end rather than looping forever', () => {
