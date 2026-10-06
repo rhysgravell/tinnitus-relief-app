@@ -6,6 +6,7 @@ import {
   trendCaption,
   trendWindow,
 } from './trend';
+import { LOUDNESS_LEVELS } from './checkIns';
 import type { CheckIn, Loudness, Mood } from './checkIns';
 
 /** Midday, so nothing in these tests depends on a timezone. */
@@ -226,13 +227,32 @@ describe('chartLabel', () => {
   it('summarises the range for a screen reader instead of listing every bar', () => {
     const entries = run([2, 4, 3]);
     expect(chartLabel(trendWindow(entries, TREND_DAYS, NOW))).toBe(
-      'Loudness, 3 check-ins over 14 days: from 2 to 4, most recently 3.'
+      'Loudness on a 1 to 5 scale, 3 check-ins over 14 days: from 2 to 4, most recently 3.'
+    );
+  });
+
+  it('says what the numbers are out of, which only the bars were saying', () => {
+    // A reader is given a 4 with nothing to measure it against. The scale's own buttons
+    // already answer this — "Level 4 of 5" — and the chart is the same five levels.
+    const label = chartLabel(trendWindow(run([4]), TREND_DAYS, NOW));
+    expect(label).toContain(`${LOUDNESS_LEVELS[0]} to ${LOUDNESS_LEVELS.at(-1)} scale`);
+  });
+
+  it('gives one check-in its level rather than a range from it to itself', () => {
+    // "From 4 to 4, most recently 4" is one bar read out as a range and a direction.
+    expect(chartLabel(trendWindow(run([4]), TREND_DAYS, NOW))).toBe(
+      'Loudness on a 1 to 5 scale, 1 check-in over 14 days: 4.'
     );
   });
 
   it('counts one check-in in the singular', () => {
-    expect(chartLabel(trendWindow(run([4]), TREND_DAYS, NOW))).toBe(
-      'Loudness, 1 check-in over 14 days: from 4 to 4, most recently 4.'
+    expect(chartLabel(trendWindow(run([4]), TREND_DAYS, NOW))).toContain('1 check-in over');
+  });
+
+  it('states the level once for a fortnight that never moved', () => {
+    // Same reading, and the one a long flat stretch is most likely to hit.
+    expect(chartLabel(trendWindow(run([3, 3, 3, 3]), TREND_DAYS, NOW))).toBe(
+      'Loudness on a 1 to 5 scale, 4 check-ins over 14 days: 3 every time.'
     );
   });
 });
