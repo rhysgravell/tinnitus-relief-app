@@ -58,7 +58,7 @@ describe('TrendChart', () => {
   it('summarises itself for a screen reader', () => {
     renderChart([entry('2026-08-13', 2), entry('2026-08-14', 4)]);
     expect(screen.getByTestId('chart').props.accessibilityLabel).toBe(
-      'Loudness, 2 check-ins over 14 days: from 2 to 4, most recently 4.'
+      'Loudness on a 1 to 5 scale, 2 check-ins over 14 days: from 2 to 4, most recently 4.'
     );
   });
 });

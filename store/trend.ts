@@ -1,4 +1,4 @@
-import { localDate, MIN_ENTRIES_FOR_TREND, nightAnchor } from './checkIns';
+import { localDate, LOUDNESS_LEVELS, MIN_ENTRIES_FOR_TREND, nightAnchor } from './checkIns';
 import type { CheckIn } from './checkIns';
 
 /** The window the trend opens on, and the wider one behind "See more". */
@@ -137,10 +137,25 @@ export function chartLabel(window: TrendDay[]): string {
   if (logged.length === 0) return `No check-ins in the last ${window.length} days.`;
 
   const levels = logged.map(({ loudness }) => loudness);
+  const lowest = Math.min(...levels);
+  const highest = Math.max(...levels);
   const count = logged.length === 1 ? '1 check-in' : `${logged.length} check-ins`;
-  return `Loudness, ${count} over ${window.length} days: from ${Math.min(...levels)} to ${Math.max(
-    ...levels
-  )}, most recently ${levels[levels.length - 1]}.`;
+
+  // The scale is named once at the front rather than on each number — the bars are the only
+  // thing that says what a 4 is out of, and they are exactly what this label stands in for.
+  // Both ends, rather than the scale's own "of 5", because where the middle sits is the part
+  // a range needs. Read off the levels so a scale that grew carries its own new ends here.
+  const ends = `${LOUDNESS_LEVELS[0]} to ${LOUDNESS_LEVELS[LOUDNESS_LEVELS.length - 1]}`;
+  const opening = `Loudness on a ${ends} scale, ${count} over ${window.length} days`;
+
+  // "From 4 to 4, most recently 4" is one number read out three times as though it were a
+  // range and a direction. A single check-in has neither, and nor has a fortnight that
+  // never moved — so the clause collapses to the one number there is.
+  if (lowest === highest) {
+    return logged.length === 1 ? `${opening}: ${lowest}.` : `${opening}: ${lowest} every time.`;
+  }
+
+  return `${opening}: from ${lowest} to ${highest}, most recently ${levels[levels.length - 1]}.`;
 }
 
 function mean(entries: CheckIn[]): number {
