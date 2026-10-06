@@ -1,4 +1,4 @@
-import { SOUNDS, isPlayable } from './sounds';
+import { SOUNDS, isPlayable, spokenDescriptor } from './sounds';
 import type { Sound } from './sounds';
 import { DEFAULT_SOUND_STATE } from './soundState';
 import type { SoundState, SoundStates } from './soundState';
@@ -41,6 +41,7 @@ export function savedSounds(states: SoundStates): SavedSound[] {
  * has not shipped, so claiming it would be a lie about what the sound is doing.
  */
 export function savedMeta(entry: SavedSound): string {
+  if (!isPlayable(entry.sound)) return 'Coming soon';
   // Lower case, because this is the back half of a phrase rather than a label of its own.
   return composeMeta(entry, (minutes) => (minutes === null ? 'no timer' : `${minutes}m`), ' · ');
 }
@@ -50,6 +51,11 @@ export function savedMeta(entry: SavedSound): string {
  * dot as nothing at all — so whole words, and a comma to pause on.
  */
 export function savedSpokenMeta(entry: SavedSound): string {
+  // The one place the two readings say different things rather than the same thing
+  // differently: the row is disabled, and "Coming soon" says when, not why it will not
+  // open. Borrowed from the grid's cards so the same sound gets the same answer on both
+  // screens — a dimmed row with no reason given reads as broken.
+  if (!isPlayable(entry.sound)) return spokenDescriptor(entry.sound);
   return composeMeta(
     entry,
     (minutes) => (minutes === null ? 'no timer' : `${minutes} minutes`),
@@ -59,14 +65,15 @@ export function savedSpokenMeta(entry: SavedSound): string {
 
 /**
  * Both readings of the line, so the wording can only ever differ in the timer and the
- * separator — the two things a screen reader needs said differently.
+ * separator — the two things a screen reader needs said differently. A sound with no
+ * recording never reaches here: that line is the one the two readings disagree on, so each
+ * caller answers it for itself.
  */
 function composeMeta(
-  { sound, state, mostPlayed }: SavedSound,
+  { state, mostPlayed }: SavedSound,
   timerText: (minutes: number | null) => string,
   separator: string
 ): string {
-  if (!isPlayable(sound)) return 'Coming soon';
   // Nothing to promise about a sound that has never played: its session will open on the
   // default timer from Settings rather than on the untouched value stored here.
   if (state.sessionCount === 0) return 'Not played yet';

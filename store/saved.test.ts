@@ -1,6 +1,6 @@
 import { savedMeta, savedSounds, savedSpokenMeta } from './saved';
 import type { SavedSound } from './saved';
-import { findSound } from './sounds';
+import { findSound, spokenDescriptor } from './sounds';
 import { DEFAULT_SOUND_STATE } from './soundState';
 import type { SoundState, SoundStates } from './soundState';
 
@@ -109,6 +109,21 @@ describe('savedSpokenMeta', () => {
   it('reads the same as the visible line where there is nothing to spell out', () => {
     const unplayed = entry('underwater', { sessionCount: 0 });
     expect(savedSpokenMeta(unplayed)).toBe(savedMeta(unplayed));
+  });
+
+  it('says why a sound with no recording will not open, not when it might', () => {
+    // The row is disabled. "Coming soon" is a release date, which leaves a reader with a
+    // dead button and no reason for it.
+    const unplayable = entry('rain-on-canvas', { sessionCount: 0 });
+    expect(savedSpokenMeta(unplayable)).toBe('No recording for this one yet');
+    expect(savedSpokenMeta(unplayable)).not.toBe(savedMeta(unplayable));
+  });
+
+  it('gives that answer in the same words the grid uses, not its own', () => {
+    // Derived rather than repeated, so the same sound cannot come to be explained one way
+    // on Sounds and another way on Saved.
+    const unplayable = entry('rain-on-canvas');
+    expect(savedSpokenMeta(unplayable)).toBe(spokenDescriptor(unplayable.sound));
   });
 });
 

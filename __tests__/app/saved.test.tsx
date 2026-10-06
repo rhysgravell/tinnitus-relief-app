@@ -159,6 +159,17 @@ describe('Saved screen', () => {
     expect(screen.queryByText('Downloaded for offline')).toBeNull();
   });
 
+  it('tells a screen reader why that row will not open', async () => {
+    // The row is there and disabled; "Coming soon" is a release date, not a reason. The
+    // grid's cards already say why, and this is the same sound on another screen.
+    jest.mocked(soundState.getSoundStates).mockResolvedValue(stored({ 'rain-on-canvas': {} }));
+    await renderScreen();
+
+    const row = screen.getByTestId('saved-row-rain-on-canvas');
+    expect(row.props.accessibilityState).toMatchObject({ disabled: true });
+    expect(row.props.accessibilityHint).toBe('No recording for this one yet');
+  });
+
   it('leaves out a sound whose star the user has since cleared', async () => {
     jest.mocked(soundState.getSoundStates).mockResolvedValue({
       underwater: saved(),
