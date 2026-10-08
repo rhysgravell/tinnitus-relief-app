@@ -45,9 +45,11 @@ function Sleep() {
   // and a default timer changed in Settings has to reach the card rather than wait for a
   // relaunch.
   const { settings } = useSettings();
-  // Whether the breathing sheet can promise a sound underneath. `silent` covers a sound
-  // that is loaded but has no recording — the placeholder catalogue has one.
+  // Whether the routine and the breathing sheet can promise a sound underneath — the same
+  // sentence on both, so they answer the question from the same place. `silent` covers a
+  // sound that is loaded but has no recording — the placeholder catalogue has one.
   const { playing, silent } = usePlayback();
+  const soundPlaying = playing && !silent;
 
   const [breathing, setBreathing] = useState(false);
 
@@ -95,6 +97,7 @@ function Sleep() {
               step={step}
               position={index + 1}
               divider={index < ROUTINE.length - 1}
+              soundPlaying={soundPlaying}
               action={
                 step.action === 'breathing' ? (
                   <OutlineButton
@@ -112,7 +115,7 @@ function Sleep() {
         <BreathingExercise
           visible={breathing}
           onClose={() => setBreathing(false)}
-          soundPlaying={playing && !silent}
+          soundPlaying={soundPlaying}
         />
       </SafeAreaView>
     </ScreenBackground>

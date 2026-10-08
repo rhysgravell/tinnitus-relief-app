@@ -268,6 +268,30 @@ describe('Sleep screen', () => {
     expect(screen.getByText(/breathe at the pace it sets/)).toBeTruthy();
   });
 
+  it('keeps the step that opens it as honest as the sheet itself', async () => {
+    // The step read "with your sound still playing underneath" whatever was or was not
+    // playing — the sheet's promise, made one screen earlier and never checked.
+    await renderScreen();
+    expect(screen.queryByText(/your sound still playing underneath/)).toBeNull();
+    expect(screen.getByText('Guided, with a circle to set the pace.')).toBeTruthy();
+  });
+
+  it('lets the step promise the sound when there is one playing', async () => {
+    playback({ playing: true });
+    await renderScreen();
+
+    expect(screen.getByText('Guided, with your sound still playing underneath.')).toBeTruthy();
+  });
+
+  it('makes no promise for a sound with no recording behind it', async () => {
+    // `silent` is a player that was opened but has nothing to play, which is as good as
+    // nothing underneath.
+    playback({ playing: true, silent: true });
+    await renderScreen();
+
+    expect(screen.queryByText(/your sound still playing underneath/)).toBeNull();
+  });
+
   it('shows what a saved sound is when there is no session to repeat', async () => {
     jest.mocked(soundState.getSoundStates).mockResolvedValue({
       'at-the-beach': { ...DEFAULT_SOUND_STATE, saved: true, sessionCount: 4 },
