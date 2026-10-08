@@ -39,6 +39,21 @@ describe('RoutineStep', () => {
     expect(screen.getByText(breathing.title)).toBeTruthy();
   });
 
+  it('promises the sound underneath when one is playing', () => {
+    const breathing = breathingStep();
+    renderStep({ step: breathing, soundPlaying: true });
+    expect(screen.getByText(/your sound still playing underneath/)).toBeTruthy();
+  });
+
+  it('says only what holds when nothing is playing', () => {
+    // The step can be read on a night where no sound was ever opened, and the sheet it
+    // opens stopped claiming one in that case long before this line did.
+    const breathing = breathingStep();
+    renderStep({ step: breathing });
+    expect(screen.queryByText(/your sound still playing underneath/)).toBeNull();
+    expect(screen.getByText(breathing.detail)).toBeTruthy();
+  });
+
   it('lets a title that needs no spoken variant be read as it is written', () => {
     // Three of the four steps are whole words already; a label of their own would only be
     // a second copy to drift.

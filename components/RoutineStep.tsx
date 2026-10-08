@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { Text } from './Text';
 import { useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
+import { stepDetail } from '../store/routine';
 import type { RoutineStep as Step } from '../store/routine';
 
 const NUMERAL_SIZE = 28;
@@ -15,6 +16,12 @@ type Props = {
   divider?: boolean;
   /** The step's control, for the one step that has something to press. */
   action?: ReactNode;
+  /**
+   * Whether a sound is playing, for the one step whose detail can say so. Defaults to no,
+   * which is the reading that holds on any night — the promise of a sound underneath has to
+   * be asked for.
+   */
+  soundPlaying?: boolean;
 };
 
 /**
@@ -23,7 +30,13 @@ type Props = {
  * Numerals rather than the old emoji, because this is a sequence and a numeral says so —
  * five unrelated pictograms did not.
  */
-export function RoutineStep({ step, position, divider = true, action }: Props) {
+export function RoutineStep({
+  step,
+  position,
+  divider = true,
+  action,
+  soundPlaying = false,
+}: Props) {
   const { colors } = useTheme();
 
   return (
@@ -49,7 +62,7 @@ export function RoutineStep({ step, position, divider = true, action }: Props) {
           {step.title}
         </Text>
         <Text variant="bodySecondary" tone="muted" style={styles.detail}>
-          {step.detail}
+          {stepDetail(step, soundPlaying)}
         </Text>
       </View>
       {action}

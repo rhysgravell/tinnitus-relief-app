@@ -1,4 +1,4 @@
-import { BREATHING_MINUTES, ROUTINE } from './routine';
+import { BREATHING_MINUTES, ROUTINE, stepDetail } from './routine';
 
 describe('the wind-down routine', () => {
   it('reads as a sequence, not a pile of tips', () => {
@@ -51,9 +51,44 @@ describe('the wind-down routine', () => {
     }
   });
 
+  it('promises a sound underneath only on the evidence that one is playing', () => {
+    const breathing = ROUTINE.find((step) => step.action === 'breathing');
+    if (!breathing) throw new Error('the routine has no breathing step');
+    expect(stepDetail(breathing, true)).toBe(breathing.soundDetail);
+    expect(stepDetail(breathing, false)).toBe(breathing.detail);
+  });
+
+  it('keeps every unconditional detail true of a night where nothing was opened', () => {
+    // The rule rather than the string: a `detail` is what a step says before anything is
+    // known about the player, so a claim about a sound belongs in `soundDetail` or nowhere.
+    // A step added later that mentions one fails here until it is moved.
+    for (const step of ROUTINE) {
+      expect(stepDetail(step, false)).not.toMatch(/\bsound\b/i);
+    }
+  });
+
+  it('says more about a playing sound than it does about none, where it says anything', () => {
+    // A second reading that matches the first is a copy waiting to drift.
+    for (const step of ROUTINE) {
+      if (step.soundDetail === undefined) continue;
+      expect(step.soundDetail).not.toBe(step.detail);
+      expect(step.soundDetail).toMatch(/\bsound\b/i);
+    }
+  });
+
+  it('falls back to the one reading for a step that has no second', () => {
+    const plain = ROUTINE.filter((step) => step.soundDetail === undefined);
+    expect(plain.length).toBeGreaterThan(0);
+    for (const step of plain) {
+      expect(stepDetail(step, true)).toBe(step.detail);
+    }
+  });
+
   it('carries no emoji', () => {
     // The redesign replaced them with numerals throughout.
-    const text = ROUTINE.map((step) => `${step.title} ${step.detail}`).join(' ');
+    const text = ROUTINE.map(
+      (step) => `${step.title} ${step.detail} ${step.soundDetail ?? ''}`
+    ).join(' ');
     expect(text).not.toMatch(/\p{Extended_Pictographic}/u);
   });
 });
