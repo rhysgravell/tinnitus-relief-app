@@ -1,8 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
+  checkInDay,
+  checkInQuestion,
   draftStatus,
   EMPTY_DRAFT,
   getCheckIns,
+  localDate,
   LOUDNESS_ENDS,
   LOUDNESS_LEVELS,
   loudnessLabel,
@@ -152,10 +155,61 @@ describe('draft status', () => {
   });
 
   it('labels the button by what pressing it would do', () => {
-    expect(saveLabel('incomplete')).toBe('Save today');
-    expect(saveLabel('new')).toBe('Save today');
-    expect(saveLabel('changed')).toBe('Update today');
-    expect(saveLabel('saved')).toBe('Saved');
+    expect(saveLabel('incomplete', 'today')).toBe('Save today');
+    expect(saveLabel('new', 'today')).toBe('Save today');
+    expect(saveLabel('changed', 'today')).toBe('Update today');
+    expect(saveLabel('saved', 'today')).toBe('Saved');
+  });
+
+  it('names the night it would write to, when that is not today', () => {
+    expect(saveLabel('new', 'last night')).toBe('Save last night');
+    expect(saveLabel('changed', 'last night')).toBe('Update last night');
+  });
+
+  it('still just says "Saved", which is about the tap and not about the day', () => {
+    expect(saveLabel('saved', 'last night')).toBe('Saved');
+  });
+});
+
+describe('the day the check-in screen says it is asking about', () => {
+  it('is today through the evening, when the app is normally opened', () => {
+    expect(checkInDay(new Date(2026, 7, 8, 21, 30))).toBe('today');
+    expect(checkInDay(new Date(2026, 7, 8, 23, 59))).toBe('today');
+  });
+
+  it('is last night after midnight, which is the night the entry files under', () => {
+    // The bug: the heading said "How was today?" and the button "Save today" while
+    // `nightDate` filed the answer under the day before.
+    expect(checkInDay(new Date(2026, 7, 9, 0, 1))).toBe('last night');
+    expect(checkInDay(new Date(2026, 7, 9, 4, 59))).toBe('last night');
+  });
+
+  it('is today again once the night has turned over', () => {
+    expect(checkInDay(new Date(2026, 7, 9, 5, 0))).toBe('today');
+  });
+
+  it('agrees with the date the answer is filed under, at every hour of the day', () => {
+    // The rule rather than the hours: the wording is only ever wrong when it disagrees
+    // with `nightDate`, so compare the two directly and let the turnover move if it ever
+    // needs to.
+    for (let hour = 0; hour < 24; hour += 1) {
+      const now = new Date(2026, 7, 9, hour, 30);
+      const sameDay = nightDate(now) === localDate(now);
+      expect(checkInDay(now)).toBe(sameDay ? 'today' : 'last night');
+    }
+  });
+
+  it('asks about that day in its heading', () => {
+    expect(checkInQuestion('today')).toBe('How was today?');
+    expect(checkInQuestion('last night')).toBe('How was last night?');
+  });
+
+  it('asks about the same day the button offers to save', () => {
+    // One noun behind both, so the screen cannot ask about one day and save another.
+    for (const day of ['today', 'last night'] as const) {
+      expect(checkInQuestion(day)).toContain(day);
+      expect(saveLabel('new', day)).toContain(day);
+    }
   });
 });
 

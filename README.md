@@ -83,7 +83,9 @@ Expo Router bundles everything under `app/`, so those live in `__tests__/app/`.
 filled in at 01:00 are both about the night that has just been had, so both are filed under
 the date before. `nightDate()` in `store/checkIns.ts` is the only thing that decides this,
 and the trend chart's last column follows it too. Dating anything by the plain calendar date
-puts it on a different day from the session it belongs beside.
+puts it on a different day from the session it belongs beside. The copy follows the filing as
+well as the data does: after midnight the Check-in screen asks "How was last night?" and
+offers to save it, from the one noun `checkInDay()` returns.
 
 **A screen reader gets its own wording where the visible text is abbreviated.** "45m" is read
 aloud as forty-five metres, "22:30" as a pair of numbers, and a middle dot as nothing at all.
