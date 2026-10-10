@@ -2,6 +2,7 @@ import {
   formatTimeOfDay,
   greetingFor,
   msUntilGreetingChanges,
+  NIGHT_UNTIL_HOUR,
   parseTimeOfDay,
   relativeDayLabel,
   spokenTimeOfDay,
@@ -24,9 +25,35 @@ describe('greetingFor', () => {
     expect(greetingFor(at(iso))).toBe(expected);
   });
 
-  it('greets the small hours as morning rather than inventing a fourth greeting', () => {
-    // 3am is nobody's evening, and the design only specifies three greetings.
-    expect(greetingFor(at('2026-08-09T03:00:00'))).toBe('Good morning');
+  it('does not greet the small hours as morning, which the rest of the app calls night', () => {
+    // This used to answer "Good morning" on purpose, since the design names only three
+    // greetings. But the night runs to 5am everywhere else — the Check-in screen asks
+    // "How was last night?" at the same hour — so morning starting at midnight had the app
+    // contradicting itself.
+    expect(greetingFor(at('2026-08-09T00:01:00'))).toBe('Late night');
+    expect(greetingFor(at('2026-08-09T03:00:00'))).toBe('Late night');
+    expect(greetingFor(at('2026-08-09T04:59:00'))).toBe('Late night');
+  });
+
+  it('turns over into morning at the hour the night ends', () => {
+    // The same boundary the filing uses, rather than a second number to drift from it.
+    expect(greetingFor(at('2026-08-09T05:00:00'))).toBe('Good morning');
+  });
+
+  it('says only what the clock says about the small hours', () => {
+    // Why someone is awake at 3am is theirs. The line states the hour and guesses nothing,
+    // so it is true of a night shift as well as of a bad night.
+    const line = greetingFor(at('2026-08-09T03:00:00'));
+    expect(line).not.toMatch(/\?|sleep|awake|still/i);
+  });
+
+  it('calls night exactly the hours that are filed under the night before', () => {
+    // The rule rather than the hours: one boundary for the greeting and the filing, so
+    // moving the turnover cannot leave the two disagreeing again.
+    for (let hour = 0; hour < 24; hour += 1) {
+      const line = greetingFor(at(`2026-08-09T${String(hour).padStart(2, '0')}:30:00`));
+      expect(line === 'Late night').toBe(hour < NIGHT_UNTIL_HOUR);
+    }
   });
 
   it('never addresses the user by name', () => {
@@ -48,8 +75,14 @@ describe('msUntilGreetingChanges', () => {
     expect(msUntilGreetingChanges(at('2026-08-09T17:45:00'))).toBe(15 * MINUTE);
   });
 
-  it('counts the evening down to midnight, where morning starts again', () => {
+  it('counts the evening down to midnight, where the late-night line takes over', () => {
     expect(msUntilGreetingChanges(at('2026-08-09T22:30:00'))).toBe(1.5 * HOUR);
+  });
+
+  it('counts the small hours down to the turnover, not all the way to noon', () => {
+    // The screen is open at 2am and the line has to move at five. Counting to noon would
+    // leave "Late night" up over breakfast.
+    expect(msUntilGreetingChanges(at('2026-08-09T02:00:00'))).toBe(3 * HOUR);
   });
 
   it('lands on the hour the greeting actually changes', () => {
@@ -58,6 +91,14 @@ describe('msUntilGreetingChanges', () => {
 
     expect(greetingFor(next)).toBe('Good afternoon');
     expect(greetingFor(new Date(next.getTime() - 1))).toBe('Good morning');
+  });
+
+  it('lands on the turnover from the small hours too', () => {
+    const now = at('2026-08-09T02:00:00');
+    const next = new Date(now.getTime() + msUntilGreetingChanges(now));
+
+    expect(greetingFor(next)).toBe('Good morning');
+    expect(greetingFor(new Date(next.getTime() - 1))).toBe('Late night');
   });
 
   it('never asks for a timer of nothing', () => {
