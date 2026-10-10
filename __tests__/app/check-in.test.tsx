@@ -15,7 +15,7 @@ jest.mock('expo-router', () => ({
   useFocusEffect: jest.fn(),
 }));
 
-/** Midday on 14 August 2026, which is "today" throughout. */
+/** Midday on 14 August 2026 — before the evening, so "today" unless a case moves the clock. */
 const NOW = new Date(2026, 7, 14, 12, 0);
 
 /** Re-runs the focus effect, as switching back to the tab would. */
@@ -48,7 +48,9 @@ async function renderScreen() {
 }
 
 function saveButton() {
-  return screen.getByRole('button', { name: /^(Save today|Update today|Saved)$/ });
+  return screen.getByRole('button', {
+    name: /^((Save|Update) (today|last night)|Saved)$/,
+  });
 }
 
 async function answer(loudness: number, mood: string) {
@@ -237,5 +239,63 @@ describe('Check-in screen', () => {
     expect(screen.getByLabelText('Level 2 of 5').props.accessibilityState).toMatchObject({
       selected: false,
     });
+  });
+
+  it('asks about last night when opened after midnight, which is what it files under', async () => {
+    // The answer goes under the 14th; asking "How was today?" on the 15th named a day the
+    // screen was not writing to, and offered to save it.
+    jest.setSystemTime(new Date(2026, 7, 15, 1, 0));
+    await renderScreen();
+
+    expect(screen.getByRole('heading', { name: 'How was last night?' })).toBeTruthy();
+    await answer(3, 'Calm');
+    expect(screen.getByText('Save last night')).toBeTruthy();
+  });
+
+  it('files an after-midnight answer under the night it is about', async () => {
+    jest.setSystemTime(new Date(2026, 7, 15, 1, 0));
+    await renderScreen();
+    await answer(3, 'Calm');
+
+    await act(async () => {
+      fireEvent.press(saveButton());
+    });
+
+    expect(checkIns.saveCheckIn).toHaveBeenCalledWith({
+      date: '2026-08-14',
+      loudness: 3,
+      mood: 'calm',
+    });
+  });
+
+  it('changes the word for the night at midnight without changing the night', async () => {
+    // Midnight moves the calendar date but not the night, so the stored answer stands —
+    // only the word for it moves. Wording tied to the date changing would have stayed on
+    // "today" until 5am.
+    jest.setSystemTime(new Date(2026, 7, 14, 23, 0));
+    history([entry('2026-08-14', 2)]);
+    await renderScreen();
+    expect(screen.getByRole('heading', { name: 'How was today?' })).toBeTruthy();
+
+    jest.setSystemTime(new Date(2026, 7, 15, 0, 30));
+    await refocus();
+
+    expect(screen.getByRole('heading', { name: 'How was last night?' })).toBeTruthy();
+    // Same night, so what was logged for it is still on screen and still saved.
+    expect(screen.getByText('Saved')).toBeTruthy();
+    expect(screen.getByLabelText('Level 2 of 5').props.accessibilityState).toMatchObject({
+      selected: true,
+    });
+  });
+
+  it('offers to update last night, rather than today, after midnight', async () => {
+    jest.setSystemTime(new Date(2026, 7, 15, 1, 0));
+    history([entry('2026-08-14', 2)]);
+    await renderScreen();
+
+    fireEvent.press(screen.getByLabelText('Level 4 of 5'));
+    await act(async () => {});
+
+    expect(screen.getByText('Update last night')).toBeTruthy();
   });
 });

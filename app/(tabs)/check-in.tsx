@@ -14,7 +14,7 @@ import { TrendChart } from '../../components/TrendChart';
 import { useCheckIn } from '../../hooks/useCheckIn';
 import { useTheme } from '../../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../../theme/tokens';
-import { saveLabel } from '../../store/checkIns';
+import { checkInQuestion, saveLabel } from '../../store/checkIns';
 import {
   hasEarlierThan,
   loggedDays,
@@ -32,7 +32,7 @@ import {
  */
 export default function CheckInScreen() {
   const { colors } = useTheme();
-  const { ready, entries, nights, draft, status, setLoudness, setMood, save, refresh } =
+  const { ready, entries, nights, day, draft, status, setLoudness, setMood, save, refresh } =
     useCheckIn();
   const [wide, setWide] = useState(false);
 
@@ -53,7 +53,8 @@ export default function CheckInScreen() {
       {/* Two cards, a button and the trend overflow a small phone, so the screen scrolls —
           the design's fixed frame is a large one. */}
       <ScrollView contentContainerStyle={styles.content}>
-        <ScreenHeader title="How was today?" subtitle="Thirty seconds, once a day" />
+        {/* "How was last night?" before 5am, which is the night the entry files under. */}
+        <ScreenHeader title={checkInQuestion(day)} subtitle="Thirty seconds, once a day" />
 
         <View style={styles.form}>
           <QuestionCard testID="loudness-card" question="How loud was the ringing?">
@@ -65,7 +66,7 @@ export default function CheckInScreen() {
           </QuestionCard>
 
           <PrimaryButton
-            label={saveLabel(status)}
+            label={saveLabel(status, day)}
             onPress={save}
             // Off both when there is nothing to save and when there is nothing left to
             // save, which is what tells the user the last tap landed.

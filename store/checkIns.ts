@@ -88,6 +88,29 @@ export function nightAnchor(now: Date): Date {
   return night;
 }
 
+/** What the screen calls the stretch of time it is asking about. */
+export type CheckInDay = 'today' | 'last night';
+
+/**
+ * Which of those two the screen is filing under right now.
+ *
+ * Derived by asking `nightDate` rather than by restating the 5am rule, so the wording
+ * follows the filing wherever the turnover is moved to. Before 5am the two disagree — the
+ * entry goes under the night just had, which on the calendar was yesterday.
+ */
+export function checkInDay(now: Date = new Date()): CheckInDay {
+  return nightDate(now) === localDate(now) ? 'today' : 'last night';
+}
+
+/**
+ * The screen's heading. Composed from the same noun as the save button so the two cannot
+ * ask about one day and offer to save another — which is exactly what they did at 1am,
+ * both saying "today" over an entry being filed under the night before.
+ */
+export function checkInQuestion(day: CheckInDay): string {
+  return `How was ${day}?`;
+}
+
 /** Oldest first, so the trend chart can render straight from this. */
 export async function getCheckIns(): Promise<CheckIn[]> {
   const stored = await readJson<CheckIn[]>(KEY, []);
@@ -125,10 +148,13 @@ export function draftStatus(draft: CheckInDraft, stored: CheckIn | undefined): D
 /**
  * The button's label. It doubles as the confirmation: there is no toast in this design, so
  * the word going from "Save today" to "Saved" is how the app says it landed.
+ *
+ * Names the day it will write, which before 5am is the night before — offering to "save
+ * today" at 1am promised the wrong day, and the heading above it agreed.
  */
-export function saveLabel(status: DraftStatus): string {
+export function saveLabel(status: DraftStatus, day: CheckInDay): string {
   if (status === 'saved') return 'Saved';
-  return status === 'changed' ? 'Update today' : 'Save today';
+  return `${status === 'changed' ? 'Update' : 'Save'} ${day}`;
 }
 
 export function draftFrom(entry: CheckIn | undefined): CheckInDraft {
