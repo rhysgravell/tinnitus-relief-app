@@ -74,7 +74,12 @@ describe('useGreeting', () => {
     advance(6 * HOUR);
     expect(result.current).toBe('Good evening');
 
+    // Midnight is the late-night line, not morning — morning waits for the 5am turnover,
+    // which is a fourth hop the timer has to arm itself for.
     advance(6 * HOUR);
+    expect(result.current).toBe('Late night');
+
+    advance(5 * HOUR);
     expect(result.current).toBe('Good morning');
   });
 

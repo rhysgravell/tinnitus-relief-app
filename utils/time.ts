@@ -9,19 +9,39 @@ const AFTERNOON_FROM = 12;
 const EVENING_FROM = 18;
 
 /**
+ * Anything before this hour belongs to the night before — the greeting above, the wording
+ * of `relativeDayLabel`, and the night a session or a check-in is filed under in
+ * `store/sessions.ts` and `store/checkIns.ts`. Up here with the other two boundaries
+ * because it is one of them: it is where the greeting turns over into morning.
+ */
+export const NIGHT_UNTIL_HOUR = 5;
+
+/**
  * The line above the title on Sounds. There is no name to address the user by — nothing
  * in the app collects one, since the onboarding screen that would is deferred — so the
  * greeting stands alone rather than inventing a placeholder.
+ *
+ * Morning starts at the 5am turnover, not at midnight. This used to greet 1am as morning
+ * deliberately, on the grounds that the design names only three greetings — but the app
+ * decided elsewhere that the night runs to 5am, and the Check-in screen says so out loud
+ * ("How was last night?"). Greeting the same hour as morning on one screen and calling it
+ * last night on another is the app disagreeing with itself, at the hour it is most likely
+ * to be opened.
+ *
+ * "Late night" rather than a fourth good-wish: it states the clock, which is all the app
+ * knows. Why someone is awake at 3am is theirs, and a greeting is the wrong place to guess.
  */
 export function greetingFor(now: Date): string {
   const hour = now.getHours();
   if (hour >= EVENING_FROM) return 'Good evening';
   if (hour >= AFTERNOON_FROM) return 'Good afternoon';
-  return 'Good morning';
+  if (hour >= NIGHT_UNTIL_HOUR) return 'Good morning';
+  return 'Late night';
 }
 
 /**
- * How long until `greetingFor` would answer differently: the next of noon, six, or midnight.
+ * How long until `greetingFor` would answer differently: the next of five, noon, six, or
+ * midnight.
  *
  * Sounds is a tab, so it mounts once and stays mounted — a greeting worked out when it did
  * would still read "Good afternoon" hours later. This is what the screen re-reads the clock
@@ -32,12 +52,14 @@ export function msUntilGreetingChanges(now: Date): number {
   next.setMinutes(0, 0, 0);
 
   const hour = now.getHours();
-  if (hour < AFTERNOON_FROM) {
+  if (hour < NIGHT_UNTIL_HOUR) {
+    next.setHours(NIGHT_UNTIL_HOUR);
+  } else if (hour < AFTERNOON_FROM) {
     next.setHours(AFTERNOON_FROM);
   } else if (hour < EVENING_FROM) {
     next.setHours(EVENING_FROM);
   } else {
-    // Evening runs to midnight, where morning starts again.
+    // Evening runs to midnight, where the late-night line takes over.
     next.setHours(0);
     next.setDate(next.getDate() + 1);
   }
@@ -89,12 +111,6 @@ export function spokenTimeOfDay({ hour, minute }: TimeOfDay): string {
     ? `${onTheClock} ${period}`
     : `${onTheClock}:${String(minute).padStart(2, '0')} ${period}`;
 }
-
-/**
- * Sessions before this hour belong to the night before — for the wording here, and for
- * the night a session is filed under in `store/sessions.ts`.
- */
-export const NIGHT_UNTIL_HOUR = 5;
 
 /**
  * How the resume card refers to when the last session ran: "Last night", "Yesterday",

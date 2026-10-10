@@ -85,7 +85,9 @@ the date before. `nightDate()` in `store/checkIns.ts` is the only thing that dec
 and the trend chart's last column follows it too. Dating anything by the plain calendar date
 puts it on a different day from the session it belongs beside. The copy follows the filing as
 well as the data does: after midnight the Check-in screen asks "How was last night?" and
-offers to save it, from the one noun `checkInDay()` returns.
+offers to save it, from the one noun `checkInDay()` returns, and the Sounds greeting reads
+"Late night" until morning starts at the same hour. `NIGHT_UNTIL_HOUR` in `utils/time.ts` is
+the one boundary all of them take.
 
 **A screen reader gets its own wording where the visible text is abbreviated.** "45m" is read
 aloud as forty-five metres, "22:30" as a pair of numbers, and a middle dot as nothing at all.
