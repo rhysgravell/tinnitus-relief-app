@@ -112,6 +112,14 @@ line and the app's actual state disagree, the state wins and the copy bends arou
 pretending. Everything around them is real: the catalogue, the timer, the fade, the volume,
 the session log. Drop real recordings in over the top and the app plays them.
 
+## What only a phone can tell you
+
+Some of this app is unreachable from a test or a simulator: the splash the OS paints before any
+app code runs, a reminder tapped from the lock screen, a sound through a phone call, and what a
+screen reader actually says. [`DEVICE_PASS.md`](DEVICE_PASS.md) is the list of those, with what
+to expect and what is still a placeholder — and it says which native changes are waiting on a
+`npx expo prebuild --clean`.
+
 ## Contributing
 
 See [`.claude/skills/create-pr/SKILL.md`](.claude/skills/create-pr/SKILL.md) for the branch, test, and PR workflow used in this repo.
