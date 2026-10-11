@@ -100,9 +100,10 @@ that take a visible string take the spoken one next to it — `SavedRow`'s `spok
 
 **The app never claims something it is not doing.** A sound whose recording has not shipped
 says "Coming soon" rather than failing on a tap; the breathing sheet and the routine step
-that opens it only promise a sound underneath when one is playing; the session's chevron
-only offers to stop a sound that is audible. When a design line and the app's actual state
-disagree, the state wins and the copy bends around it.
+that opens it only promise a sound underneath when one is playing; and the session's two
+exits each describe only what they will really do — the chevron offers to stop a sound only
+when one is audible, the moon promises to leave it playing only when it is. When a design
+line and the app's actual state disagree, the state wins and the copy bends around it.
 
 ## The sound files are placeholders
 

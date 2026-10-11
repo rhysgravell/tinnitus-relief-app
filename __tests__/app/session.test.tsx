@@ -308,6 +308,43 @@ describe('Session screen', () => {
     );
   });
 
+  it('does not promise a sound underneath Sleep when there is no recording to leave', async () => {
+    // The same question asked of the other exit, which is what this test did not do when
+    // the chevron got its answer: the moon went on saying "leaving the sound playing"
+    // about a sound that cannot play. What it has to say is that it does not end the
+    // session, and that stays true either way.
+    //
+    // A sound that is in the catalogue but has no recording, rather than the absent one
+    // the chevron's case uses — the moon is only drawn when there is a sound to show.
+    await renderSession('rain-on-canvas');
+    expect(
+      screen.getByRole('button', { name: 'Wind down for the night' }).props.accessibilityHint
+    ).toBe('Opens Sleep without ending the session');
+  });
+
+  it('does not promise a playing sound once it has been paused', async () => {
+    // Handing over a paused player leaves it paused. The hint used to say otherwise.
+    await renderSession();
+    fireEvent.press(transport());
+    expect(transport().props.accessibilityLabel).toBe('Play');
+
+    expect(
+      screen.getByRole('button', { name: 'Wind down for the night' }).props.accessibilityHint
+    ).toBe('Opens Sleep without ending the session');
+  });
+
+  it('promises it again when the sound is playing again', async () => {
+    // Not a one-way change: resuming puts the stronger claim back.
+    await renderSession();
+    fireEvent.press(transport());
+    fireEvent.press(transport());
+    expect(transport().props.accessibilityLabel).toBe('Pause');
+
+    expect(
+      screen.getByRole('button', { name: 'Wind down for the night' }).props.accessibilityHint
+    ).toBe('Opens Sleep, leaving the sound playing');
+  });
+
   it('hands over to the Sleep screen rather than stacking it on top of the session', async () => {
     await renderSession();
     fireEvent.press(screen.getByRole('button', { name: 'Wind down for the night' }));

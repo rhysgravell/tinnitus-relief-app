@@ -181,7 +181,16 @@ function Session() {
                 }}
                 accessibilityRole="button"
                 accessibilityLabel="Wind down for the night"
-                accessibilityHint="Opens Sleep, leaving the sound playing"
+                // The claim this exit is here to make is that it does not end the session.
+                // That it leaves the sound *playing* is a claim about the player, and only
+                // true when something is: not when the recording has not shipped, and not
+                // when the user has just paused it. The chevron above has been careful
+                // about this since it gained its hint; this one was not.
+                accessibilityHint={
+                  playing && !silent
+                    ? 'Opens Sleep, leaving the sound playing'
+                    : 'Opens Sleep without ending the session'
+                }
                 hitSlop={SPACE.s12}
               >
                 <RNText style={[styles.moon, { color: colors.textMuted }]}>☾</RNText>
