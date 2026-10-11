@@ -17,6 +17,22 @@ const EVENING_FROM = 18;
 export const NIGHT_UNTIL_HOUR = 5;
 
 /**
+ * Midday on the night a moment belongs to — the date, as a date, for stepping back through
+ * a window of days. Midday rather than midnight so a clock change, where a day is 23 hours
+ * long, cannot carry the arithmetic onto the wrong date.
+ *
+ * Lives here with the hour it turns on rather than in `store/checkIns.ts`, so the wording
+ * below and the filing in the stores can take the same answer from the same function. Two
+ * moments are in the same night exactly when this returns the same instant for both.
+ */
+export function nightAnchor(now: Date): Date {
+  const night = new Date(now);
+  if (night.getHours() < NIGHT_UNTIL_HOUR) night.setDate(night.getDate() - 1);
+  night.setHours(12, 0, 0, 0);
+  return night;
+}
+
+/**
  * The line above the title on Sounds. There is no name to address the user by — nothing
  * in the app collects one, since the onboarding screen that would is deferred — so the
  * greeting stands alone rather than inventing a placeholder.
@@ -115,23 +131,51 @@ export function spokenTimeOfDay({ hour, minute }: TimeOfDay): string {
 /**
  * How the resume card refers to when the last session ran: "Last night", "Yesterday",
  * "3 days ago". Deliberately vague — the exact minute is not why anyone reads this line.
+ *
+ * The near cases turn on the night rather than on the calendar day, because the calendar
+ * day ends in the middle of this app's busiest stretch. A session at eleven, looked back on
+ * at one, read "Last night" — a night the user had not yet been through, two hours after
+ * running it.
  */
 export function relativeDayLabel(when: Date, now: Date): string {
+  const nights = nightsBetween(when, now);
+
+  // Still inside the stretch it ran in, whichever side of midnight that began. Zero or
+  // fewer, so a clock moved backwards reads as "just now" rather than as a negative count.
+  if (nights <= 0) {
+    return ranInTheNight(when) ? 'Earlier tonight' : 'Earlier today';
+  }
+
+  // One night back, which the calendar may put either today or the day before yesterday:
+  // something that finished at 1am and is read over breakfast is last night, and so is
+  // something from Monday evening read at 2am on Wednesday.
+  if (nights === 1) {
+    return ranInTheNight(when) ? 'Last night' : 'Yesterday';
+  }
+
+  // Further back the wording goes vague, and by then days are what a person counts in —
+  // nights would call something two and a half days old "3 days ago".
   const days = wholeDaysBetween(when, now);
-
-  if (days <= 0) {
-    // Something that finished at 1am today is colloquially last night, not this morning.
-    if (when.getHours() < NIGHT_UNTIL_HOUR) return 'Last night';
-    // And a session at nine, looked back on at eleven, was tonight — the evening is when
-    // this app gets used, so this is the case the label meets most.
-    return when.getHours() >= EVENING_FROM ? 'Earlier tonight' : 'Earlier today';
-  }
-
-  if (days === 1) {
-    return when.getHours() >= EVENING_FROM ? 'Last night' : 'Yesterday';
-  }
-
   return days < 7 ? `${days} days ago` : 'Over a week ago';
+}
+
+/**
+ * Whether a session ran in the night part of its night rather than in the daylight part —
+ * the evening, or the small hours before the turnover. It decides "night" against "day"
+ * wording; which night it was is `nightAnchor`'s business.
+ */
+function ranInTheNight(when: Date): boolean {
+  const hour = when.getHours();
+  return hour >= EVENING_FROM || hour < NIGHT_UNTIL_HOUR;
+}
+
+/**
+ * Nights apart, where `wholeDaysBetween` counts calendar days. Both moments are taken to
+ * midday of the night they belong to first, which is also what keeps a clock change from
+ * moving the count.
+ */
+function nightsBetween(when: Date, now: Date): number {
+  return wholeDaysBetween(nightAnchor(when), nightAnchor(now));
 }
 
 /**

@@ -1,4 +1,5 @@
-import { localDate, LOUDNESS_LEVELS, MIN_ENTRIES_FOR_TREND, nightAnchor } from './checkIns';
+import { localDate, LOUDNESS_LEVELS, MIN_ENTRIES_FOR_TREND } from './checkIns';
+import { nightAnchor } from '../utils/time';
 import type { CheckIn } from './checkIns';
 
 /** The window the trend opens on, and the wider one behind "See more". */
