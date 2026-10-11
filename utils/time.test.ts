@@ -2,6 +2,7 @@ import {
   formatTimeOfDay,
   greetingFor,
   msUntilGreetingChanges,
+  nightAnchor,
   NIGHT_UNTIL_HOUR,
   parseTimeOfDay,
   relativeDayLabel,
@@ -134,6 +135,57 @@ describe('relativeDayLabel', () => {
   it('calls a session that ran past midnight last night', () => {
     // Technically today, but nobody describes 1am as this morning.
     expect(relativeDayLabel(at('2026-08-09T01:00:00'), now)).toBe('Last night');
+  });
+
+  it('keeps an evening session tonight when it is read after midnight', () => {
+    // The case this app meets most and got wrong: a session at eleven, woken from and
+    // reopened at one. Two hours old, the same night, and the card said "Last night".
+    expect(relativeDayLabel(at('2026-08-09T23:00:00'), at('2026-08-10T01:00:00'))).toBe(
+      'Earlier tonight'
+    );
+  });
+
+  it('keeps a session in the small hours tonight while that night is still running', () => {
+    expect(relativeDayLabel(at('2026-08-10T02:00:00'), at('2026-08-10T03:00:00'))).toBe(
+      'Earlier tonight'
+    );
+  });
+
+  it('calls it last night once the night has actually turned over', () => {
+    // 4am read at 6am: the same calendar day, but the night ended in between.
+    expect(relativeDayLabel(at('2026-08-10T04:00:00'), at('2026-08-10T06:00:00'))).toBe(
+      'Last night'
+    );
+  });
+
+  it('calls the night before the one you are in last night, after midnight', () => {
+    // Saturday evening, read at 2am on Monday — one night back, though the calendar
+    // counts two days. This used to read "2 days ago".
+    expect(relativeDayLabel(at('2026-08-08T21:00:00'), at('2026-08-10T02:00:00'))).toBe(
+      'Last night'
+    );
+  });
+
+  it('never says last night about a session in the night it is still in', () => {
+    // The rule rather than the hours: inside one night the label can only be an "Earlier",
+    // whichever side of midnight the session or the reading falls.
+    const night = ['2026-08-09T18:30:00', '2026-08-09T23:59:00', '2026-08-10T04:30:00'];
+    for (const when of night) {
+      for (const reading of night) {
+        if (at(reading) < at(when)) continue;
+        expect(relativeDayLabel(at(when), at(reading))).toBe('Earlier tonight');
+      }
+    }
+  });
+
+  it('takes the night from the same place the stores file it under', () => {
+    // Not a second turnover to drift from `nightAnchor`: the label is "Earlier" exactly
+    // when the two moments share an anchor.
+    const when = at('2026-08-09T23:00:00');
+    for (const reading of ['2026-08-10T01:00:00', '2026-08-10T09:00:00']) {
+      const sameNight = nightAnchor(when).getTime() === nightAnchor(at(reading)).getTime();
+      expect(relativeDayLabel(when, at(reading)).startsWith('Earlier')).toBe(sameNight);
+    }
   });
 
   it('calls yesterday evening last night', () => {

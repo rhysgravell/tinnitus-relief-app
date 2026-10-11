@@ -1,5 +1,5 @@
 import { readJson, updateJson } from './storage';
-import { NIGHT_UNTIL_HOUR } from '../utils/time';
+import { nightAnchor } from '../utils/time';
 
 const KEY = 'checkIns';
 
@@ -74,18 +74,6 @@ export function localDate(date: Date): string {
  */
 export function nightDate(now: Date = new Date()): string {
   return localDate(nightAnchor(now));
-}
-
-/**
- * Midday on the night a moment belongs to — the date, as a date, for stepping back through
- * a window of days. Midday rather than midnight so a clock change, where a day is 23 hours
- * long, cannot carry the arithmetic onto the wrong date.
- */
-export function nightAnchor(now: Date): Date {
-  const night = new Date(now);
-  if (night.getHours() < NIGHT_UNTIL_HOUR) night.setDate(night.getDate() - 1);
-  night.setHours(12, 0, 0, 0);
-  return night;
 }
 
 /** What the screen calls the stretch of time it is asking about. */
