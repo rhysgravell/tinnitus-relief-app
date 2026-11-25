@@ -89,9 +89,13 @@ describe('TonightCard', () => {
     // A switch with nothing behind it would look broken rather than blocked.
     renderCard({ denied: true });
     expect(screen.getByText(/Notifications are off for this app/)).toBeTruthy();
-    expect(screen.queryByText('45 min · Underwater')).toBeNull();
-    // And the spoken summary goes with it, rather than reading out a session the reminder
-    // is not going to start.
-    expect(screen.queryByLabelText('45 minutes, Underwater')).toBeNull();
+  });
+
+  it('keeps saying what Start now will play when notifications are off', () => {
+    // The refusal stops the reminder, not the session: "Start now" still opens it, so the
+    // line that says what it opens has to stay, on screen and spoken.
+    renderCard({ denied: true });
+    expect(screen.getByText('45 min · Underwater')).toBeTruthy();
+    expect(screen.getByLabelText('45 minutes, Underwater')).toBeTruthy();
   });
 });

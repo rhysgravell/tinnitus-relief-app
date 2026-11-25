@@ -17,7 +17,7 @@ type Props = {
   spokenSummary: string;
   reminderOn: boolean;
   onReminderChange: (on: boolean) => void;
-  /** Shown in place of the summary when the OS has refused notifications. */
+  /** Adds a note under the summary when the OS has refused notifications. */
   denied?: boolean;
   onStart: () => void;
 };
@@ -54,18 +54,23 @@ export function TonightCard({
             accessibilityLabel={`Wind-down at ${spokenTime}`}
           >{`Wind-down at ${time}`}</Text>
           {/* "45 min · Underwater" is read out as forty-five metres and then nothing where
-              the dot is, so the spoken line says the words. The denial is already a
-              sentence, and reads as written. */}
+              the dot is, so the spoken line says the words. */}
           <Text
             variant="bodySecondary"
             tone="muted"
             style={styles.summary}
-            accessibilityLabel={denied ? undefined : spokenSummary}
+            accessibilityLabel={spokenSummary}
           >
-            {denied
-              ? 'Notifications are off for this app, so there will be no reminder.'
-              : summary}
+            {summary}
           </Text>
+          {/* Beside the summary, not in place of it. The refusal is about the reminder;
+              "Start now" still opens this session, and still needs to say what it is. The
+              note is already a sentence, and reads as written. */}
+          {denied ? (
+            <Text variant="bodySecondary" tone="muted" style={styles.summary}>
+              Notifications are off for this app, so there will be no reminder.
+            </Text>
+          ) : null}
         </View>
         <Toggle
           value={reminderOn}
