@@ -17,7 +17,11 @@ import { useReminder } from '../hooks/useReminder';
 import type { Reminder } from '../hooks/useReminder';
 import { useTheme } from '../theme/ThemeProvider';
 import { LAYOUT, SPACE } from '../theme/tokens';
-import { timerAccessibilityLabel, timerSettingLabel } from '../store/settings';
+import {
+  REMINDER_DENIED_NOTE,
+  timerAccessibilityLabel,
+  timerSettingLabel,
+} from '../store/settings';
 import { formatTimeOfDay, spokenTimeOfDay } from '../utils/time';
 
 /** Which row is open. Only ever one, so the screen stays a screen and not a stack of pickers. */
@@ -200,9 +204,7 @@ function ReminderRow({ title, testID, reminder, expanded, onPress, divider }: Re
   return (
     <SettingsRow
       title={title}
-      description={
-        denied ? 'Notifications are off for this app, so there will be no reminder.' : undefined
-      }
+      description={denied ? REMINDER_DENIED_NOTE : undefined}
       value={time ? formatTimeOfDay(time) : 'Off'}
       valueAccessibilityLabel={time ? spokenTimeOfDay(time) : 'Off'}
       onPress={onPress}
