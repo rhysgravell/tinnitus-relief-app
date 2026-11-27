@@ -79,6 +79,14 @@ export function reminderPatch(
     : { checkInEnabled: enabled, checkInTime: time };
 }
 
+/**
+ * What a reminder says when the OS has refused notifications, on the Sleep card and on the
+ * Settings row alike. One sentence in one place: both are answering the same question about
+ * the same reminder, and two copies would only need one edit to start disagreeing.
+ */
+export const REMINDER_DENIED_NOTE =
+  'Notifications are off for this app, so there will be no reminder.';
+
 /** The evening, in half hours — the range both reminders sit in. */
 const REMINDER_FROM_HOUR = 19;
 const REMINDER_TO_HOUR = 23;

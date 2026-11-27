@@ -5,6 +5,7 @@ import { SectionLabel } from './SectionLabel';
 import { Text } from './Text';
 import { Toggle } from './Toggle';
 import { LAYOUT, SPACE } from '../theme/tokens';
+import { REMINDER_DENIED_NOTE } from '../store/settings';
 
 type Props = {
   /** "22:30" — when the reminder is set for. */
@@ -68,7 +69,7 @@ export function TonightCard({
               note is already a sentence, and reads as written. */}
           {denied ? (
             <Text variant="bodySecondary" tone="muted" style={styles.summary}>
-              Notifications are off for this app, so there will be no reminder.
+              {REMINDER_DENIED_NOTE}
             </Text>
           ) : null}
         </View>
