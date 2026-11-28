@@ -98,4 +98,20 @@ describe('TonightCard', () => {
     expect(screen.getByText('45 min · Underwater')).toBeTruthy();
     expect(screen.getByLabelText('45 minutes, Underwater')).toBeTruthy();
   });
+
+  it('switches Start now off when there is nothing to play', () => {
+    // The summary says "No sounds available to play"; a live button under it would do
+    // nothing when pressed.
+    renderCard({ summary: 'No sounds available to play', onStart: null });
+    const start = screen.getByRole('button', { name: 'Start now' });
+
+    expect(start.props.accessibilityState).toMatchObject({ disabled: true });
+  });
+
+  it('leaves Start now on while there is something to play', () => {
+    renderCard();
+    expect(
+      screen.getByRole('button', { name: 'Start now' }).props.accessibilityState
+    ).toMatchObject({ disabled: false });
+  });
 });

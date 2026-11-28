@@ -20,7 +20,11 @@ type Props = {
   onReminderChange: (on: boolean) => void;
   /** Adds a note under the summary when the OS has refused notifications. */
   denied?: boolean;
-  onStart: () => void;
+  /**
+   * Opens tonight's session now. Null when there is nothing to play, which leaves the button
+   * on the card but switched off — the summary has just said why.
+   */
+  onStart: (() => void) | null;
 };
 
 /**
@@ -79,7 +83,15 @@ export function TonightCard({
           accessibilityLabel={`Remind me at ${spokenTime}`}
         />
       </View>
-      <SecondaryButton label="Start now" onPress={onStart} style={styles.start} />
+      {/* Disabled rather than hidden, so the card keeps its shape; and never live with
+          nothing behind it, because a button that does nothing when pressed reads as
+          broken rather than empty. */}
+      <SecondaryButton
+        label="Start now"
+        onPress={() => onStart?.()}
+        disabled={onStart === null}
+        style={styles.start}
+      />
     </Card>
   );
 }
