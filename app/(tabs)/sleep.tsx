@@ -77,9 +77,11 @@ function Sleep() {
               reminderOn={windDown.enabled}
               onReminderChange={windDown.setEnabled}
               denied={windDown.denied}
-              onStart={() => {
-                if (sound) router.push({ pathname: '/session', params: { soundId: sound.id } });
-              }}
+              onStart={
+                sound
+                  ? () => router.push({ pathname: '/session', params: { soundId: sound.id } })
+                  : null
+              }
             />
           ) : null}
         </View>
